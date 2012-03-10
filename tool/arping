@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+#
+#  Purpose: Send and receive packets at data link layer
+#
+
+import os
+import all
+import sys
+import socket
+
+# init default
+try:
+  iface = all.get_if_conf()[0]  # interface 
+except:
+  iface = "eth0"                # if the interface is not specified, set the network interface to "eth0"
+
+def usage():
+    print ("""\nUsage: arping <options> [host]
+Desc: The arping command is used to sending ARP Request.
+
+Options:
+      -h,--help      | Print this help
+      -i,--interface | Network interface 
+ 
+Ex: arping 192.168.1.1
+    arping -i wlan0 192.168.1.1\n""")
+    sys.exit(0)
+
+def arping(host=None, iface=None, verb=0):
+    """
+      ARP Ping-Pong
+    """
+    psrc = "0.0.0.0"
+    all.conf.iface = iface
+    all.conf.verb = verb
+    
+    try:
+      # arping by fake address, verbose mode off
+      ans,unans = all.srp(all.Ether(src=all.get_fake_hwaddr(),dst="ff:ff:ff:ff:ff:ff")/all.ARP(psrc=psrc,hwsrc=all.get_fake_hwaddr(),hwdst="00:00:00:00:00:00",pdst=host.split('/')[0]),timeout=1)
+      
+      all.conf.verb = 1
+      # arping by duplicate address detection, verbose mode on
+      ans,unans = all.srp(all.Ether(dst="ff:ff:ff:ff:ff:ff")/all.ARP(psrc=psrc,hwdst="00:00:00:00:00:00",pdst=host),timeout=5)
+      
+      # print result
+      print ("\n-------------------------------------------------------------------")
+      print ("%-17s%-20s%s" % ("IPaddr","Hwaddr","Vendor"))
+      print ("-------------------------------------------------------------------")
+      for snd,rcv in ans:
+	ip = rcv.sprintf(r"%ARP.psrc%")
+	mac = rcv.sprintf(r"%Ether.src%")
+	vendor = all.check_mac_vendor(mac=mac)
+	print ("%-17s%-20s%s" % (ip,mac,vendor))
+      print ("-------------------------------------------------------------------")
+    except socket.gaierror:
+      print ("[-] %s: host not found" % (host))
+
+# sanity
+for arg in sys.argv:
+  if (arg.lower() == "-h" or arg.lower() == "--help"):
+    usage()
+      
+if (len(sys.argv) > 1):
+  if (len(sys.argv) == 2):
+    host = sys.argv[1]
+  elif (len(sys.argv) > 3):
+    if (sys.argv[1].lower() == "-i" or sys.argv[1].lower() == "--interface"):
+      iface = sys.argv[2]
+      host = sys.argv[3]
+    else:
+      usage()
+  else:
+    usage()
+else:
+   usage()
+   
+if iface not in all.get_if_all():
+  print ("\n[-] Error: %s: No such device\n" % (iface))
+  sys.exit()
+      
+if not all.check_if_up(iface=iface):
+  print ("\n[-] Error: %s: Network is down\n" % (iface))
+  sys.exit()
+       
+if not all.check_ipv4(addr=host):
+  print ("\n[-] Error: %s: Invalid IPv4 address or Invalid CIDR\n" % (host))
+  sys.exit()
+
+# main
+print("\nInterface on: %s" % (iface))
+arping(host=host,iface=iface)
+print("")
+
+## EOF ##

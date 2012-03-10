@@ -1,0 +1,141 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+#
+#  Reference: http://www.ibm.com/developerworks/aix/library/au-multiprocessing/
+#
+#  Purpose: Searching  the Gateway or Router host.
+#
+
+import all
+import os
+import re
+import sys
+import time
+import signal
+import fcntl
+import struct
+from socket import *
+
+# init default
+SOCK       = socket ()         # instans
+try:
+  iface = all.get_if_conf()[0] # interface 
+except:
+  iface      = "eth0"          # if the interface is not specified, set the network interface to "eth0"
+target     = "8.8.8.8"         # if the internet ip not specified, set to Google Public DNS
+host_list  = []                # list for the host live 
+host_tmp   = "/tmp/mac.txt"    # temporary host
+  
+def usage():
+    print ("""\nUsage: gwdisc <options> 
+Desc: The gwdisc command is used to searching the gateway or router host.
+
+Options:
+      -h,--help      | Print this help
+      -i,--interface | Network interface 
+      -t,--target    | Ip of internet
+ 
+Ex: gwdisc 
+    gwdisc -t 8.8.8.8
+    gwdisc -i wlan0 -t 8.8.4.4\n""")
+    sys.exit()
+    
+def get_host_list():
+    """
+      getting host, append to list
+    """
+    line = open(host_tmp).readlines()
+    for i in line:
+      try:
+	ip =  i.strip().split()[0]
+	mac = i.strip().split()[1]
+	if re.match(all.MAC_ADDR,mac):
+	  host_list.append("%s %s" % (ip,mac))
+      except:
+	pass
+
+def icmp_reply(pkt):
+    """
+      result capture (ICMP Reply)
+    """
+    if pkt.sprintf("%IP.src%") == target:
+      for gw in host_list: 
+	if pkt.sprintf("%Ether.src%") == gw.split()[1]:
+	  print ("Response from %s." % gw)
+
+def echo_request(iface=None, dst_list=None, target=None, verb=0):
+    """
+      echo request
+    """
+    all.conf.verb = 0
+    all.conf.iface = iface
+    target = target
+    dst_list = dst_list
+    
+    for n, i in enumerate (dst_list,1):
+      ip = i.split()[0]
+      mac = i.split()[1]
+      print ("Sending packets to %s [%s], destination route ICMP Ping to %s." % (ip,mac,target))
+      all.sendp(all.Ether(src=all.get_if_hwaddr(iface),dst="%s" % (mac))/all.IP(dst=target)/all.ICMP(seq=n))
+      time.sleep(3)
+    print("")
+    
+# sanity
+try:
+  for arg in sys.argv:
+    if (arg.lower() == "-h" or arg.lower() == "--help"):
+      usage()
+    if (arg.lower() == "-i" or arg.lower() == "--interface"):
+      iface =  sys.argv[int(sys.argv[1:].index(arg))+2]
+    if (arg.lower() == "-t" or arg.lower() == "--target"):
+      target =  sys.argv[int(sys.argv[1:].index(arg))+2]
+except IndexError:
+  usage()
+
+  
+if iface not in all.get_if_all():
+  print ("\n[-] Error: %s: No such device\n" % (iface))
+  sys.exit()
+      
+if not all.check_if_up(iface=iface):
+  print ("\n[-] Error: %s: Network is down\n" % (iface))
+  sys.exit()
+       
+if not all.check_ipv4(addr=target):
+  print ("\n[-] Error: %s: Invalid IPv4 address\n" % (target))
+  sys.exit()
+
+try:
+  ip = inet_ntoa(fcntl.ioctl(SOCK, all.SIOCGIFADDR, struct.pack('256s', iface))[20:24])
+except:
+  print ("\n[-] Error: %s: no IPv4 address assigned\n" % (iface))
+  sys.exit()
+
+############
+##  MAIN  ##
+############
+
+print ("\nInterface on: %s" % (iface))
+print ("Destination Inet: %s\n" % (target))
+
+# arping to get list of host in the LAN
+os.system("python arping %s/24 > %s" % (ip,host_tmp))
+
+# getting host from temporary file
+get_host_list()
+
+# multi processing
+pid = os.fork()
+if pid: # parent process
+  # send packet
+  echo_request(iface=iface, dst_list=host_list, target=target)
+  # kill parent
+  os.kill(pid, signal.SIGTERM)
+else: # child process
+  # sniff reply
+  all.sniff(iface=iface, prn=icmp_reply, filter="icmp[icmptype] == icmp-echoreply and host %s" % (target),store=0)
+
+## EOF ##

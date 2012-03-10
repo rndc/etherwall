@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+#
+#
+#  Reference: http://www.securityfriday.com/promiscuous_detection_01.pdf
+#
+#  Purpose: Detection of promiscuous nodes in the LAN
+#
+
+import all
+import sys
+
+# init default
+try:
+  iface = all.get_if_conf()[0]                                    # interface 
+  host = "%s/%s" % (all.get_if_conf()[2],all.get_if_conf()[5])    # ip addr and prefix
+except:
+  iface = "eth0"                                                  # if the interface is not specified, set the network interface to "eth0"             
+  host = "0.0.0.0/24"                                             # if the host address is not specified, set the host address to "0.0.0.0/24"
+  
+def usage():
+    print ("""\nUsage: promiscop <options> [host]
+Desc: The promiscop command is used to detection of promiscuous nodes in the LAN.
+
+Options:
+      -h,--help      | Print this help
+      -i,--interface | Network interface 
+ 
+Ex: promiscop
+    promiscop 192.168.1.1
+    promiscop -i eth0 192.168.1.1
+    promiscop -i eth0 192.168.1.0/24\n""")
+    sys.exit()
+    
+def promiscop(host=None, iface=None, verb=0):
+    all.conf.iface = iface
+    all.conf.verb = verb
+  
+    ans1, uans1 = all.srp(all.Ether(dst="ff:ff:ff:ff:ff:fe")/all.ARP(pdst=host,hwdst="00:00:00:00:00:00"),timeout=5)
+    ans2, uans2 = all.srp(all.Ether(dst="ff:ff:00:00:00:00")/all.ARP(pdst=host,hwdst="00:00:00:00:00:00"),timeout=5)
+
+    for snd1,rcv1 in ans1:
+      probably1 = rcv1.sprintf(r"%ARP.psrc% [%Ether.src%]")
+      for snd2,rcv2 in ans2:
+	probably2 = rcv2.sprintf(r"%ARP.psrc% [%Ether.src%]")
+	if (probably1 == probably2):
+	  print ("%s Probably in promiscuous mode." % (probably2))
+
+# sanity
+for arg in sys.argv:
+    if (arg.lower() == "-h" or arg.lower() == "--help"):
+      usage()
+
+if (len(sys.argv) == 1):
+    host = host
+elif (len(sys.argv) == 2):
+    host = sys.argv[1]
+elif (len(sys.argv) > 3):
+  if (sys.argv[1].lower() == "-i" or sys.argv[1].lower() == "--interface"):
+    iface = sys.argv[2]
+    host = sys.argv[3]
+  else:
+    usage()
+else:
+  usage()
+  
+if iface not in all.get_if_all():
+  print ("\n[-] Error: %s: No such device\n" % (iface))
+  sys.exit()
+      
+if not all.check_if_up(iface=iface):
+  print ("\n[-] Error: %s: Network is down\n" % (iface))
+  sys.exit()
+       
+if not all.check_ipv4(addr=host):
+  print ("\n[-] Error: %s: Invalid IPv4 address or Invalid CIDR\n" % (host))
+  sys.exit()
+
+# main
+print ("\nInterface on: %s" % (iface))
+print("Searching promiscuous host...\n")
+promiscop(host=host,iface=iface)
+print("")
+
+## EOF ##

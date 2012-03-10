@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+#
+#  Reference: http://standards.ieee.org/develop/regauth/oui/oui.txt
+#
+#  Purpose: shows the vendor of a MAC Address 
+#
+
+import all
+import sys
+import urllib
+
+UPDATE_LINK =  "http://standards.ieee.org/develop/regauth/oui/oui.txt"
+OUI_FILE = "/etc/etherwall/etherwall-oui.txt"
+
+def usage():
+    print ("""\nUsage: macvendor [hwaddr]
+Desc: The macvendor command is used to shows the vendor of a MAC Address.
+
+Options:
+      -h,--help   | Print this help
+      -u,--update | Update database vendor
+ 
+Ex: macvendor 00:11:22:33:44:55
+    macvendor -u\n""")
+    sys.exit()
+    
+def update_vendor():
+    print ("\nPlease wait until the update is finished...\n")
+    try:
+      updateresult = urllib.urlopen(UPDATE_LINK).read()
+    except:
+      print("[-] Error: Not Connected: Please check your internet connections or maybe the server is offline\n")
+      sys.exit()
+    
+    try:
+      files = open(OUI_FILE,"w")
+      files.write(updateresult)
+      files.close()
+      print ("Updated successfully !\n")
+    except:
+      print("[-] Error: Failed to write oui file\n")
+      sys.exit()
+    print ("")
+    sys.exit()
+    
+def check_vendor(mac=None):
+    vendor = all.check_mac_vendor(mac=mac,info=True)
+    if vendor == "Unknown":
+      print ("%s Vendor" % (vendor))
+    elif vendor:
+      print vendor
+    else:
+      print ("Error: %s: Invalid MAC Address" % (mac))
+    
+  
+# sanity
+for arg in sys.argv:
+  if (arg.lower() == "-h" or arg.lower() == "--help"):
+    usage()
+  if (arg.lower() == "-u" or arg.lower() == "--update"):
+    update_vendor()
+    
+if (len(sys.argv) > 1):
+  print("")
+  check_vendor(mac=sys.argv[1])
+  print("")
+else:
+  usage()
+  
+## EOF ##

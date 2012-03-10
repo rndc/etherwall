@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+
+import os
+import sys
+import all
+
+
+try:
+  iface = all.get_if_conf()[0]   # interface
+  gw = all.get_if_conf()[3]      # gateway address
+except:
+  iface = "eth0"                 # if the interface is not specified, set the network interface to "eth0"
+  gw = None                      # if the gateway is not specified, set the gateway address to "None"
+
+class linktype():
+    def __init__(self, verb=0, iface=None, gw=None):
+      self.verb = verb
+      self.iface = iface
+      self.gw = gw
+
+      if not self.gw:
+	print ("\n[-] ERROR: %s: No Route Gateway\n" % (self.iface))
+	sys.exit()
+
+    def _checkLinkType(self):
+      """
+        Check link type
+      """
+      all.conf.verb = self.verb
+      all.conf.iface = self.iface
+
+      print ("\nInterface on: %s" % (self.iface))
+      print ("\nChecking link type...")
+
+      ans,unans=all.srp(all.Ether(src=all.get_fake_hwaddr(), dst="ff:ff:ff:ff:ff:ff")/all.ARP(psrc="0.0.0.0",hwsrc=all.get_fake_hwaddr(),hwdst="00:00:00:00:00:00",pdst=self.gw), timeout=10)
+
+      if unans:
+	print ("You are plugged into a SWITCH\n")
+      else:
+	print ("You are plugged into a HUB\n")
+
+if (__name__ == '__main__'):
+  s = linktype(iface=iface,gw=gw)
+  s._checkLinkType()
+
+## EOF ##

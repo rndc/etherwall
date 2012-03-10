@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+
+# Ordered by Alphabet.
+# Note: For Add & Edit, Please don't use tab.
+
+print ("")
+print ("+----------------------------------------------------------------------------------------------+")
+print ("| COMMAND        | SHORT DESCRIPTION                                                           |")
+print ("+----------------------------------------------------------------------------------------------+")
+print ("| allow          | giving permissions to access your system                                    |")
+print ("| arp            | manipulating the system ARP cache                                           |")
+print ("| arping         | sending & receiving packets at data link layer                              |")
+print ("| banner         | displaying ASCI art by random                                               |")
+print ("| clear          | clear the console screen                                                    |")
+print ("| deny           | revoking permissions (reverse the allow command)                            |")
+print ("| dhcpcop        | identifying rogue DHCP servers in the LAN (preventing DHCP fake & spoofing) |")
+print ("| flog           | displaying the last few lines of etherwall log files to standard output     |")
+print ("| gwdisc         | discovering gateway or router host (identifying rogue routers)              |")
+print ("| help           | displaying the help guide                                                   |")
+print ("| interface      | displaying an active interface                                              |")
+print ("| linktype       | checking network link type (HUB/SWITCH)                                     |")
+print ("| macfaked       | manipulating the physical address of network interface                      |")
+print ("| macvendor      | shows the vendor of a MAC address                                           |")
+print ("| promiscop      | detection of promiscuous nodes in the LAN (sniffer detection)               |")
+print ("+----------------------------------------------------------------------------------------------+")
+print ("")
+
+## EOF ##

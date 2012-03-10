@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+#
+#
+#  Reference: http://www.secdev.org/projects/scapy/doc/usage.html#identifying-rogue-dhcp-servers-on-your-lan
+#	      http://trac.secdev.org/scapy/wiki/DhcpTakeover
+#
+#
+#  Purpose: Identifying rogue DHCP servers in the LAN
+#
+
+import all
+import os
+import sys
+import time
+import signal
+
+# init default
+
+# more information about number services, see at /etc/services
+bpsport = 67                               # 67/udp  Bootstrap Protocol Server
+bpcport = 68                               # 68/udp  Bootstrap Protocol Client
+dhcpserver = []                            # server that provides dhcp 
+
+try:
+  iface = all.get_if_conf()[0]             # interface    
+except:
+  iface = "eth0"                           # if the interface is not specified, set the network interface to "eth0"
+
+def usage():
+    print ("""\nUsage: dhcpcop [interface]
+Desc: The dhcpcop command is used to Identifying rogue DHCP servers on LAN.
+
+Options:
+      -h,--help      | Print this help
+ 
+Ex: dhcpcop
+    dhcpcop eth0\n""")
+    sys.exit()
+
+def dhcp_reply(resp):
+    """
+      DHCP Reply
+    """
+    try:
+      if resp[all.DHCP] and resp[all.DHCP].options[0][1] == 2:
+	if ("%s %s" % (resp[all.IP].src,resp[all.Ether].src)) not in dhcpserver:
+	  print ("INFO: DHCP Offer from %s [%s]" % (resp[all.IP].src,resp[all.Ether].src))
+	  dhcpserver.append("%s %s" % (resp[all.IP].src,resp[all.Ether].src))
+	  if len(dhcpserver) > 1:
+	    print ("WARNING: More than one DHCP Server found, Be carefull with DHCP fake and spoofing !")
+    except:
+      pass
+
+def dhcp_discover(iface=None):
+    all.conf.verb = 0
+    all.conf.iface = iface
+    hw = all.get_if_raw_hwaddr(iface)[1]
+    hwsrc = all.get_if_hwaddr(iface)
+    # send dhcp discovering
+    print ("INFO: Sending a DHCP Discover on %s to 255.255.255.255 port %s/udp" % (iface,bpsport))
+    all.sendp(all.Ether(src=hwsrc,dst="ff:ff:ff:ff:ff:ff")/all.IP(src="0.0.0.0",dst="255.255.255.255")/all.UDP(sport=bpcport,dport=bpsport)/all.BOOTP(chaddr=hw)/all.DHCP(options=[("message-type","discover"),"end"]))
+    time.sleep(10)
+    
+# sanity
+for arg in sys.argv:
+    if (arg.lower() == "-h" or arg.lower() == "--help"):
+      usage()
+      
+if (len(sys.argv) == 1):
+  iface = iface
+elif (len(sys.argv) > 1):
+  iface = sys.argv[1]
+else:
+  usage()
+  
+if iface not in all.get_if_all():
+  print ("\n[-] Error: %s: No such device\n" % (iface))
+  sys.exit()
+      
+if not all.check_if_up(iface=iface):
+   print ("\n[-] Error: %s: Network is down\n" % (iface))
+   sys.exit()
+  
+############
+##  MAIN  ##
+############
+
+# multi processing
+pid = os.fork()
+if pid: # parent process
+  # send packet
+  print ("\nInterface on: %s\n" % (iface))
+  dhcp_discover(iface=iface)
+  print ("")
+  # kill parent
+  os.kill(pid, signal.SIGTERM)
+else: # child process
+  # sniff DHCPNAK 
+  all.sniff(iface=iface, prn=dhcp_reply, filter="udp and (port 67 or 68)", store=0, count=2)
+
+## EOF ##

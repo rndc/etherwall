@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+#
+#
+#  Purpose: Manipulate the physical addresses
+#
+#  Note: Used Unix ifconfig tools.
+
+import os
+import sys
+import all
+
+IFACE_LIST = all.get_if_all()
+
+def usage():
+    print ("""\nUsage: macfaked <options> [hwaddr][interface]
+Desc: The macfaked command is used to manipulating the MAC address.
+
+Options:
+      -h,--help   | Print this help
+      -r,--random | Random mac address
+      -m,--manual | Mac address
+ 
+Ex: macfaked -r eth0
+    macfaked -m 00:11:22:33:44:55 wlan0\n""")
+    sys.exit(0)
+
+def manual_fake(hwaddr=None, iface=None):
+    """
+      Faked by manual MAC
+    """
+    global IFACE_LIST
+    
+    if (iface in IFACE_LIST):
+      print ("\nStoping network interface...\n")
+      os.system("ifconfig %s down" % (iface))
+      before = os.popen("ifconfig %s | grep HWaddr | awk '{print $5}'" % iface).read().strip()
+      if os.system("ifconfig %s hw ether %s 2> /dev/null" %(iface,hwaddr)):
+	print ("[-] Failed: Cannot assign requested address, please try again.\n")
+	sys.exit()
+    else:
+      print ("[-] %s: No such device\n" % (iface))
+      sys.exit()
+	
+    print ("Interface: %s" % (iface))
+    print ("Changed: [%s]  ->  [%s]\n" % (before,hwaddr))
+	
+def random_fake(iface):
+    """
+      Faked by random MAC
+    """
+    global IFACE_LIST
+    mac = True
+    print ("\nStoping network interface...\n")
+    os.system("ifconfig %s down" % (iface))
+    if (iface in IFACE_LIST):
+      before = os.popen("ifconfig %s | grep HWaddr | awk '{print $5}'" % iface).read().strip()
+      while mac:
+	fake = all.get_fake_hwaddr()
+	mac = os.system("ifconfig %s hw ether %s 2> /dev/null" %(iface,fake))
+    else:
+      print ("[-] %s: No such device\n" % (iface))
+      sys.exit()
+    print ("Interface: %s" % (iface))
+    print ("Changed: [%s]  ->  [%s]\n" % (before,fake))
+
+
+for arg in sys.argv:
+    if (arg.lower() == "-h" or arg.lower() == "--help"):
+      usage()
+      
+if (len(sys.argv) == 3):
+    if (sys.argv[1].lower() == "-r" or sys.argv[1].lower() == "--random"):
+      iface = sys.argv[2]
+      random_fake(iface)
+    else:
+      usage()
+elif len(sys.argv) == 4:
+    if (sys.argv[1].lower() == "-m" or sys.argv[1].lower() == "--manual"):
+      hwaddr = sys.argv[2]
+      iface = sys.argv[3]
+      manual_fake(hwaddr,iface)
+else:
+    usage()
+    
+## EOF ##

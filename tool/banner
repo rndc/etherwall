@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+
+import all
+
+print all.ETHW_BANNER[all.random.randint(0,len(all.ETHW_BANNER)-1)]
+
+## EOF ##

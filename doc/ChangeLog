@@ -1,0 +1,39 @@
+ -- Agus Bimantoro <l0g.bima@gmail.com>, Fri Mar  2 07:51:05 UTC 2012
+             
+      Etherwall (1.0) Beta 2 release
+ 
+       Bug Fix:
+          
+          ~> Major
+      
+          * fixes for Error: "arptc commit() failed: Bad built-in chain name" in arptables v.0.0.8 when changing policy on chains (INPUT & OUTPUT), 
+            Thanks to Dimas Rio for reported this bugs. 
+          * prevent the gateway to change the logical address, the problem occurs because the router in the network have an interface alias. 
+          * fix up etherwall init file configuration parser. 
+          * fix up a few bugs. 
+       
+          ~> Minor 
+
+          * changed method of the banner call (more efficient), Thanks to Drubicza for suggestions.         
+
+       Updated:
+
+          * arping: updates the display and added vendor of MAC, thanks to Gika Pramuditya for suggestions.
+          * dhcpcop: now used multi processing technic for sniffer and packet sender 
+          * help: updates the command & descriptions.    
+
+       What's New:
+         
+          * added option for sniffing modes, option can be selected in the file "/etc/etherwall/etherwall.conf".
+          * added user's manual (available in english & indonesian language)
+          * promiscop: tools to detection of promiscuous nodes in the LAN. 
+          * macvendor: tools to show the vendor of a MAC Address.        
+          * gwdisc: tools to searching the gateway or router host.
+          * flog: tools to displaying the last few lines of etherwall log files to standard output.
+
+ -- Agus Bimantoro <l0g.bima@gmail.com>, Wed Jan 12 12:00:00 UTC 2012
+ 
+      Etherwall (1.0) Beta 1 release
+    
+          * Public Released. 
+          * Hosting on sourceforge.net, The url projects at http://sourceforge.net/projects/etherwall

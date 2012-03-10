@@ -1,0 +1,85 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+#
+#
+#  Purpose: manipulate the system ARP cache 
+#
+#  Note: Used Unix ARP tools. 
+#
+
+import os
+import sys
+
+LINUX_NET_ARP = '/proc/net/arp'
+
+def usage():
+  print ("""\nUsage: arp <options> [host] [hwaddr]
+Desc: The arp command is used to manipulating the system ARP cache.
+Options:
+      -h,--help   | Print this help
+      -s,--static | Set a new ARP static entry
+      -d,--delete | Delete a specified entry
+      
+Ex: arp
+    arp -s 192.168.1.1 00:11:22:33:44:55
+    arp -d 192.168.1.1\n""")
+  sys.exit(0)
+
+def arptable():
+    """
+      ARP cache table
+    """
+    print ("\n-------------------------------------------------------------------")
+    print ("%-17s%-20s%-9s%-9s%s" % ("IPaddr","Hwaddr","Flags","Hwtype","Interface"))
+    print ("-------------------------------------------------------------------")
+    for i in open(LINUX_NET_ARP,'r'):
+      if (i.split()[2] == "0x0"):
+	i = i.strip().replace("0x0","-").split()
+	print "\x1b[37m%-17s%-20s%-9s%-9s%s\x1b[0m" % (i[0],"-",i[2],i[1],i[5])
+      elif (i.split()[2] == "0x2"):
+        i = i.strip().replace("0x2","dynamic").split()
+	print "%-17s%-20s%-9s%-9s%s" % (i[0],i[3],i[2],i[1],i[5])
+      elif (i.split()[2] == "0x6"):
+	i = i.strip().replace("0x6","static").split()
+	print "\x1b[36m%-17s%-20s%-9s%-9s%s\x1b[0m" % (i[0],i[3],i[2],i[1],i[5])
+    print "-------------------------------------------------------------------\n"
+
+def arpstatic(host=None,hwaddr=None):
+    """
+      Set a new ARP static entry
+    """
+    if os.system("arp -s %s %s &> /dev/null" % (host,hwaddr)):
+      print ("\n[-] Failed: Couldn't add the static entry for the '%s %s'.\n" % (host,hwaddr))
+
+def arpdel(host=None):
+    """
+      Delete a specified entry
+    """
+    if os.system("arp -d %s &> /dev/null" % (host)):
+      print ("\n[-] Failed: Couldn't delete the specified entry for the '%s'.\n" % (host))
+
+
+if len(sys.argv) > 1:
+  for arg in sys.argv:
+    if (arg.lower() == "-h" or arg.lower() == "--help"):
+      usage()
+  try:    
+    if (sys.argv[1] == "-s"):
+      host = sys.argv[2]
+      hwaddr = sys.argv[3]
+      arpstatic(host=host,hwaddr=hwaddr)
+    elif (sys.argv[1] == "-d"):
+      host = sys.argv[2]
+      arpdel(host=host)
+    else:
+      print ("\n[-] Error: %s: Uknown Option\n" % (sys.argv[1]))
+      usage()
+  except IndexError:
+    usage()
+else:
+  arptable()
+  
+## EOF ##

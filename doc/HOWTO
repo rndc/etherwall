@@ -1,0 +1,49 @@
+########################
+# Install & Uninstall
+########################
+
+
+Install Etherwall
+~~~~~~~~~~~~~~~~~
+
+1. Before you run file install.sh, give executable permissions (must be root)
+
+bash-# chmod u+x install.sh
+
+2. Execute install.sh
+
+bash-# ./install.sh 
+
+or 
+
+bash-# bash install.sh
+
+
+Uninstall Etherwall 
+~~~~~~~~~~~~~~~~~~~
+
+1. Before you run file uninstall.sh, give executable permissions (must be root)
+
+bash-# chmod u+x uninstall.sh
+
+2. Execute uninstall.sh
+
+bash-# ./uninstall.sh 
+
+or 
+
+bash-# bash uninstall.sh
+
+
+########################
+# How to ?
+########################
+
+
+Please read the etherwall manual pages first !
+
+bash-# man etherwall
+bash-# man etherwall-id
+bash-# man ethwconsole
+bash-# man ethwconsole-id
+

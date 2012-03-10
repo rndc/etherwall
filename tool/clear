@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+
+#import subprocess
+#subprocess.call("clear", shell= True)
+
+print("\x1b[2J\x1b[H")
+
+## EOF ##

@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+#
+#
+#  Purpose: Revoking permissions to acces your system
+
+import all
+import os
+import sys
+
+# init default
+try:
+  iface = all.get_if_conf()[0]    # interface
+except:
+  iface = "eth0"                  # if the interface is not specified, set the network interface to "eth0"
+
+class deny():
+    def __init__(self, host=None, iface=None):
+	self.host = host
+	self.iface = iface
+		
+    def check_etherwall_pid(self):
+	"""
+	  Check the etherwall daemon process
+	"""
+	
+	# check pid
+	try:
+	  pf=file("/var/run/etherwall.pid",'r')
+	  pid = int(pf.read().strip())
+	except IOError:
+	  print ("\n[-] Can't used this command, Etherwall daemon is not running.\n")
+	  sys.exit()
+	
+	# check proc
+	try:
+	  procfile = file("/proc/%d/status" % pid, 'r')
+	  procfile.close()
+	except IOError:
+	  print ("\n[-] Can't used this command, Etherwall daemon is not running.\n")
+	  sys.exit()
+			
+    def whether_already_denied(self):
+      """
+	Check the host, whether it has been denied
+      """
+      for i in open("/proc/net/arp",'r'):
+	if (i.split()[0] == self.host and i.split()[2] == "0x6"):
+	  ip = i.split()[0]
+	  mac = i.split()[3]
+	  break
+	else:
+	  ip = None
+	  mac = None
+	
+      if not ip and not mac:
+	print ("\n[!] Host already denied.\n")
+        sys.exit()
+	
+      return ip,mac
+      
+    def deny_host(self,ip,mac):
+      """
+	Apply for denied
+      """
+      # deleting host from arp cache table
+      print ("Deleting static entry for the host (%s %s)..." % (ip,mac))
+      os.system("arp -d %s" % ip)
+      
+      # deleting host from chain table
+      print ("Deleting host from chain table...")
+      all.del_host_from_chain(ip=ip,mac=mac)
+	
+    def main(self):
+      print ("\nPlease a wait...")
+      self.check_etherwall_pid()
+      ip,mac = self.whether_already_denied()
+      self.deny_host(ip,mac)
+      print ("Successfully Deleted.\n")
+		
+if len(sys.argv) == 2:
+	d = deny(sys.argv[1])
+	d.main()
+else:
+	print ("\nUsage: deny [host]")
+	print ("The deny command is used to deleting host from list of hosts that are allowed to access the system.\n")
+	print ("Ex: deny 127.0.0.1\n")
+
+## EOF ##

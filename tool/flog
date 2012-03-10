@@ -1,0 +1,70 @@
+#!/usr/bin/env python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+#
+#  Purpose: displaying the last few lines of etherwall log files to standard output (It's Like a tail program)
+#
+
+import os
+import sys
+import time
+
+# globals
+ETHW_LOG_FILES = "/var/log/etherwall/etherwall.log" # path of etherwall log files
+REF_TIME = 1                                        # refresh time
+
+def usage():
+    print ("""\nUsage: flog [lines_number]
+Desc: The flog command is used to displaying the last few lines of etherwall log files to standard output, Lines default to 10 line if not specified.
+
+Options:
+      -h,--help      | Print this help
+ 
+Ex: flog
+    flog 15\n""")
+    sys.exit(0)
+
+def flog(numbers):
+    if os.path.exists(ETHW_LOG_FILES):
+      sizes = os.path.getsize(ETHW_LOG_FILES)
+      dumps = open(ETHW_LOG_FILES).readlines()
+      if numbers > len(dumps):
+	numbers = len(dumps)
+      logs = dumps[len(dumps)-numbers:]
+      for n, lines in enumerate(logs,((len(dumps)+1)-numbers)): # +1 Its because there are empty lines at the end of file.
+	print ("[%d] %s" % (n,lines.strip()))
+
+      while True:
+	if sizes != os.path.getsize(ETHW_LOG_FILES): 
+	  sizes = os.path.getsize(ETHW_LOG_FILES)
+	  dumps = open(ETHW_LOG_FILES).readlines()
+	  logs = dumps[n:]
+	  for n, lines in enumerate(logs,n+1): # It's continue of N value
+	    print ("[%d] %s" % (n,lines.strip()))
+	time.sleep(REF_TIME)
+      sys.exit(0)
+    else:
+      print ("\n[-] ERROR: %s: No such file\n" % (ETHW_LOG_FILES))
+
+# sanity
+for arg in sys.argv:
+  if (arg.lower() == "-h" or arg.lower() == "--help"):
+    usage()
+
+if len(sys.argv) > 1:
+  numbers = sys.argv[1]
+  try:
+    numbers = int(numbers)
+  except ValueError:
+    print ("\n[-] ERROR: %s: Invalid number: Lines number must be integer" % (numbers))
+    usage()
+else:
+  numbers = 10
+
+# MAIN
+print("")
+flog(numbers)
+
+## EOF ##

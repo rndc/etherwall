@@ -1,0 +1,88 @@
+##############################################################
+#
+# etherwall.py -- Network security tool for prevents MITM through ARP spoofing/poisoning attacks.
+# Agus Bimantoro <l0g.bima@gmail.com>
+#
+# http://rndc.or.id
+# http://abi71.wordpress.com
+#
+############################################################# 
+
+
+Table of Contents
+~~~~~~~~~~~~~~~~~
+
+1. Overview
+2. License
+3. Disclamer
+4. Depedency
+5. End User 
+6. Install & Howto
+7. Tested
+8. Acknowledgements
+
+
+1. Overview
+~~~~~~~~~~~
+
+Etherwall is a free and open source network security tool for prevents Man in The Middle (MITM) through ARP Spoofing/Poisoning attacks. 
+It Also prevent it from various attacks such as Sniffing, Hijacking, Netcut, DNS Spoofing, DHCP Spoofing, and others. 
+
+Etherwall has many features, including:
+
+ - Daemon Process
+ - Point to Point Protection
+ - Point to Multipoint Protection
+ - Realtime Protection
+ - Early Warning
+ - Plugin / Tool
+ - Easy to Use and Free
+
+
+2. License
+~~~~~~~~~~
+
+Etherwall is published under a GPLv3 license, Please read 'COPYING' file.
+
+
+3. Disclamer
+~~~~~~~~~~~~
+
+Etherwall is Free Software but no Any Warranty, The entire risk of failure, damage and loss after using the program is not our responsibility.
+
+
+4. Dependency
+~~~~~~~~~~~~~
+
+Etherwall needs dependency package, so You'll need:
+
+  Guido van Rossum's Python >= 2.5.2
+  Philippe Biondi's Scapy (Already include in etherwall)
+  Arptables by Ebtables (Use version 0.0.3-4 for kernel versions 2.6.16 and above), Please check information about arptables at http://ebtables.sourceforge.net/downloads/latest.html
+  James Henstridge's python GTK
+  Fred N. van Kempen and Bernd Eckenfels's Arp
+  Fred N. van Kempen, Alan Cox, Phil Blundell and Andi Kleen's Ifconfig
+  Van Jacobson, Craig Leres and Steven McCanne's Tcpdump
+
+5. End User
+~~~~~~~~~~~
+
+intended for the personal computer use only.
+
+
+6. Install & Howto 
+~~~~~~~~~~~~~~~~~~
+
+For installation and usage you can read the 'HOWTO' file.
+
+
+7. Tested
+~~~~~~~~~
+
+It's been tested on GNU/Linux using Slackware, Debian, Ubuntu, Backtrack, Mint, CentOS, Fedora, OpenSUSE, etc.
+
+
+8. Acknowledgements
+~~~~~~~~~~~~~~~~~~~
+
+Thanks to everyone who helped me for build this program.

@@ -1,0 +1,121 @@
+#!/usr/bin/python
+#
+#  This file is part of Etherwall
+#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+#  This program is published under a GPLv3 license
+#
+#  Purpose: Giving permissions to access your system 
+#
+
+import os
+import all
+import sys
+import socket
+import random
+
+# init default
+try:
+  iface = all.get_if_conf()[0]    # interface
+except:
+  iface = "eth0"                  # if the interface is not specified, set the network interface to "eth0"
+
+class allow():
+    def __init__(self, host=None, iface=None):
+      """
+	Initialization variable 
+      """
+      self.host = host
+      self.iface = iface
+      
+      if not all.check_ipv4(host):
+	print ("\n[-] Error: %s: Invalid IPv4 address.\n" % (self.host))
+	sys.exit()
+      else:
+	# Allow command doesn't allow to use cidr/prefix
+	if (len(self.host.split("/")) == 2):
+	  print ("[-] Error: %s: Allow command doesn't allow to use CIDR/Prefix." % (self.host))
+	  sys.exit()
+
+      # check interface
+      if not self.iface:
+	print ("[-] Error: No Devices Up")
+	sys.exit()
+	
+    def check_etherwall_pid(self):
+	"""
+	  Check the etherwall daemon process
+	"""
+	
+	# check pid
+	try:
+	  pf=file("/var/run/etherwall.pid",'r')
+	  pid = int(pf.read().strip())
+	except IOError:
+	  print ("\n[-] Can't used this command, Etherwall daemon is not running.\n")
+	  sys.exit()
+	
+	# check proc
+	try:
+	  procfile = file("/proc/%d/status" % pid, 'r')
+	  procfile.close()
+	except IOError:
+	  print ("\n[-] Can't used this command, Etherwall daemon is not running.\n")
+	  sys.exit()
+
+    def whether_already_allowed(self):
+      """
+	check the host, whether it has been allowed
+      """
+      for i in open("/proc/net/arp",'r'):
+	if i.split()[0] == self.host and i.split()[2] == "0x6": 
+	  print ("\n[!] Host already allowed.\n")
+	  sys.exit()
+
+    def allow_host(self):
+      """
+	Apply for allow
+      """
+      all.conf.verb = 0
+      all.conf.iface = self.iface
+      
+      try:
+	# obtain the physical address
+	ans,unans=all.srp(all.Ether(src=all.get_fake_hwaddr(),dst="ff:ff:ff:ff:ff:ff")/all.ARP(psrc="0.0.0.0",hwsrc=all.get_fake_hwaddr(), hwdst="ff:ff:ff:ff:ff:ff",pdst=self.host),timeout=2)
+	
+	if not ans:
+	  ans,unans=all.srp(all.Ether(dst="ff:ff:ff:ff:ff:ff")/all.ARP(psrc="0.0.0.0", hwdst="ff:ff:ff:ff:ff:ff", pdst=self.host), timeout=5)
+	  
+	for snd,rcv in ans:
+	  ip = rcv.sprintf(r"%ARP.psrc%")
+	  mac = rcv.sprintf(r"%Ether.src%")
+	  
+	# Adding host to ARP table as static entry
+	print ("Adding static entry for the host (%s %s)..." % (ip,mac))
+	if os.system("arp -s %s %s" % (ip,mac)):
+	  print ("\n[-] %s: Couldn't add the static entry.\n" % (host))
+	  sys.exit()
+	
+	# Append host to chain table 
+	print ("Appending host to chain table...")
+	all.app_host_to_chain(ip,mac)
+      except UnboundLocalError:
+	print ("\n[-] %s: Host not found or Failed to obtain the physical address.\n" % (self.host))
+	sys.exit()
+
+    def main(self):
+      print "\nPlease a wait..."
+      self.check_etherwall_pid()
+      self.whether_already_allowed()
+      self.allow_host()
+      print ("Successfully Append.\n")
+		
+if len(sys.argv) == 2:
+    host = sys.argv[1]
+    alw = allow(host=host, iface=iface)
+    alw.main()
+else:
+    print "\nUsage: allow [host]"
+    print "Desc: The allow command is used to adding host to the list of hosts that are allowed to access the system.\n"
+    print "Ex: allow 127.0.0.1\n"
+
+## EOF ##
