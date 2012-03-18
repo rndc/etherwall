@@ -63,8 +63,8 @@ class etherWall(UnixDaemon):
 	    self.mymac = get_if_conf()[1]
 	    self.myip = get_if_conf()[2]
 	    self.gw = get_if_conf()[3]
-	    self.gwmac = self.getGwMac() 
 	    self.cidr = get_if_conf()[5]
+	    self.gwmac = self.getGwMac() 
 	    self.promisc = get_if_conf_ff()[1]['promisc']
 	  else:
 	    # fatal error will be stop the daemon
@@ -77,7 +77,7 @@ class etherWall(UnixDaemon):
 	self.logger.error("Daemon Stopped.")
 	sys.exit(1)
       elif (get_if_conf_ff()[0] == 2):
-	# fatal error will be stop the daemon1
+	# fatal error will be stop the daemon
 	self.logger.error("%s" % (get_if_conf_ff()[1]))
 	self.logger.error("Daemon Stopped.")
 	sys.exit(1)
@@ -101,15 +101,29 @@ class etherWall(UnixDaemon):
 	scapy.all.srp(scapy.all.Ether(src=get_fake_hwaddr(),dst="ff:ff:ff:ff:ff:ff")/scapy.all.ARP(psrc="0.0.0.0",hwsrc=get_fake_hwaddr(),pdst=self.gw,hwdst="ff:ff:ff:ff:ff:ff"), timeout=1)
 
       # duplicate address detection mode
-      ans,unans=scapy.all.srp(scapy.all.Ether(src=self.mymac,dst="ff:ff:ff:ff:ff:ff")/scapy.all.ARP(psrc="0.0.0.0",hwsrc=self.mymac,pdst=self.gw,hwdst="ff:ff:ff:ff:ff:ff"), timeout=5)	
+      ans,unans = scapy.all.srp(scapy.all.Ether(src=self.mymac,dst="ff:ff:ff:ff:ff:ff")/scapy.all.ARP(psrc="0.0.0.0",hwsrc=self.mymac,pdst=self.gw,hwdst="ff:ff:ff:ff:ff:ff"), timeout=5)	
 
       # real address
       if not ans:
-	ans,unans=scapy.all.srp(scapy.all.Ether(src=self.mymac,dst="ff:ff:ff:ff:ff:ff")/scapy.all.ARP(psrc=self.myip,hwsrc=self.mymac,pdst=self.gw,hwdst="ff:ff:ff:ff:ff:ff"), timeout=5)	
+	ans,unans = scapy.all.srp(scapy.all.Ether(src=self.mymac,dst="ff:ff:ff:ff:ff:ff")/scapy.all.ARP(psrc=self.myip,hwsrc=self.mymac,pdst=self.gw,hwdst="ff:ff:ff:ff:ff:ff"), timeout=5)	
 
       for snd,rcv in ans:
 	hwaddr = rcv.sprintf(r"%Ether.src%")
-
+	
+      # check validity of the Gateway HwAddr (detected for ARP Spoofing Storm Attack) 
+      try:
+	ans,unans = scapy.all.srp(scapy.all.Ether(dst=hwaddr)/scapy.all.ARP(psrc="0.0.0.0",pdst="%s/%s" % (self.myip,self.cidr),hwdst=hwaddr), timeout=2)
+      except:
+	hwaddr = False
+	
+      if len(ans) > 1:
+	self.logger.warning("MAC address detected for the Gateway: %s %s is not valid. It's indicated a ARP Spoofing/Poisoning Storm Attack !" % (self.gw,hwaddr))
+        self.logger.error("Daemon Stopped.")
+        # WINDOW: Invalid Gateway HwAddr !
+	alert = Alert(0,"'Etherwall -  Invalid Gateway HwAddr !'","'Daemon Stopped: MAC address detected for the Gateway: \n%s %s is not valid. \nIts indicated a ARP Spoofing/Poisoning Storm Attack !'" % (self.gw,hwaddr))
+	alert.start()
+	sys.exit(1)
+	
       if hwaddr:
 	self.logger.info("MAC address detected for the Gateway: %s %s" % (self.gw,hwaddr))
       else:
