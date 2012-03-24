@@ -12,14 +12,23 @@ from NetMod import *
 from GenWall import *
 from ArpMon import *
 from Alert import Alert
+from ObtainGwHwAddr import ObtainGwHwAddr 
 
 class etherWall(UnixDaemon):
     def __init__(self, pidfile, name):
       UnixDaemon.__init__(self,pidfile=pidfile,name=name)
-
+      
     def run(self):
+      self._startArpWall()
       self._initNet()
       self._startEtherWall()
+      
+    def _startArpWall(self):
+      """
+	Starting arptables rules
+      """
+      self.logger.info("Changing arptables policy on chain INPUT & OUTPUT...")
+      chain_start()
         
     def _initNet(self):
       """
@@ -40,8 +49,8 @@ class etherWall(UnixDaemon):
       #   
 
       if (get_if_conf_ff()[0] == 0):
-	# from config file
-	if get_if_conf_ff()[1]['manual'] == "yes":
+	# if the etherwall running with specified configuration
+	if (get_if_conf_ff()[1]['manual'] == "yes"):
 	  self.iface = get_if_conf_ff()[1]['iface']
 	  self.logger.info("Listening on %s..." % (self.iface))
 	  self.mymac = get_if_conf_ff()[1]['hwaddr'].lower()
@@ -51,12 +60,12 @@ class etherWall(UnixDaemon):
 	  self.cidr = get_if_conf_ff()[1]['cidr']
 	  self.promisc = get_if_conf_ff()[1]['promisc']
 	  if not check_if_up(iface=self.iface):
-	    # fatal error will be stop the daemon
-	    self.logger.error("Interface: %s is down" % (self.iface))
-	    self.logger.error("Daemon Stopped.")
-	    sys.exit(1)
+	    # WINDOW: Interface is down
+	    alert = Alert(0,"'Etherwall - Daemon Stopped'","'Interface: %s is down.'" % (self.iface),self.logger)
+	    alert.start()
+	    time.sleep(3)
 	else:
-	  # by automatically
+	  # if the etherwall running with the automatic configuration detection
 	  if get_if_conf():
 	    self.iface = get_if_conf()[0]
 	    self.logger.info("Listening on %s..." % (self.iface))
@@ -67,75 +76,43 @@ class etherWall(UnixDaemon):
 	    self.gwmac = self.getGwMac() 
 	    self.promisc = get_if_conf_ff()[1]['promisc']
 	  else:
-	    # fatal error will be stop the daemon
-	    self.logger.error("Interface: No Device Up")
-	    self.logger.error("Daemon Stopped.")
-	    sys.exit(1)
+	    # WINDOW: No Device Up or No IPv4 address assigned
+	    alert = Alert(0,"'Etherwall - Daemon Stopped'","'Interface: No Device Up or No IPv4 address assigned.'",self.logger)
+	    alert.start()
+	    time.sleep(3)
       elif (get_if_conf_ff()[0] == 1):
-	# fatal error will be stop the daemon
-	self.logger.error("%s" % (get_if_conf_ff()[1]))
-	self.logger.error("Daemon Stopped.")
-	sys.exit(1)
+	# WINDOW: Bad parsing
+	alert = Alert(0,"'Etherwall - Daemon Stopped'","'%s.'" % (get_if_conf_ff()[1]),self.logger)
+	alert.start()
+	time.sleep(3)
       elif (get_if_conf_ff()[0] == 2):
-	# fatal error will be stop the daemon
-	self.logger.error("%s" % (get_if_conf_ff()[1]))
-	self.logger.error("Daemon Stopped.")
-	sys.exit(1)
+	# WINDOW: Device not found
+	alert = Alert(0,"'Etherwall - Daemon Stopped'","'%s.'" % (get_if_conf_ff()[1]),self.logger)
+	alert.start()
+	time.sleep(3)
       elif (get_if_conf_ff()[0] == 3):
-	# fatal error will be stop the daemon
-	self.logger.error("%s" % (get_if_conf_ff()[1]))
-	self.logger.error("Daemon Stopped.")
-	sys.exit(1)
-
-
-    def getGwMac(self, verb=0, hwaddr=None):
+	# WINDOW: Incomplete configuration format
+	alert = Alert(0,"'Etherwall - Daemon Stopped'","'%s.'" % (get_if_conf_ff()[1]),self.logger)
+	alert.start()
+	time.sleep(3)
+    
+    def getGwMac(self, gwhwaddr=None):
       """
-	Obtain the gateway MAC address by arping
+	Obtain the gateway MAC address 
       """
-      self.verb = verb
-      scapy.all.conf.verb = self.verb
-      scapy.all.conf.iface = self.iface
       
-      # fake address
-      for i in range(0,2):
-	scapy.all.srp(scapy.all.Ether(src=get_fake_hwaddr(),dst="ff:ff:ff:ff:ff:ff")/scapy.all.ARP(psrc="0.0.0.0",hwsrc=get_fake_hwaddr(),pdst=self.gw,hwdst="ff:ff:ff:ff:ff:ff"), timeout=1)
-
-      # duplicate address detection mode
-      ans,unans = scapy.all.srp(scapy.all.Ether(src=self.mymac,dst="ff:ff:ff:ff:ff:ff")/scapy.all.ARP(psrc="0.0.0.0",hwsrc=self.mymac,pdst=self.gw,hwdst="ff:ff:ff:ff:ff:ff"), timeout=5)	
-
-      # real address
-      if not ans:
-	ans,unans = scapy.all.srp(scapy.all.Ether(src=self.mymac,dst="ff:ff:ff:ff:ff:ff")/scapy.all.ARP(psrc=self.myip,hwsrc=self.mymac,pdst=self.gw,hwdst="ff:ff:ff:ff:ff:ff"), timeout=5)	
-
-      for snd,rcv in ans:
-	hwaddr = rcv.sprintf(r"%Ether.src%")
+      self.logger.info("Trying to detect MAC address of the Gateway...")
+      gwhwaddr = ObtainGwHwAddr(self.iface,self.gw,self.myip,self.mymac)
 	
-      # check validity of the Gateway HwAddr (detected for ARP Spoofing Storm Attack) 
-      try:
-	ans,unans = scapy.all.srp(scapy.all.Ether(dst=hwaddr)/scapy.all.ARP(psrc="0.0.0.0",pdst="%s/%s" % (self.myip,self.cidr),hwdst=hwaddr), timeout=2)
-      except:
-	hwaddr = False
-	
-      if len(ans) > 1:
-	self.logger.warning("MAC address detected for the Gateway: %s %s is not valid. It's indicated a ARP Spoofing/Poisoning Storm Attack !" % (self.gw,hwaddr))
-        self.logger.error("Daemon Stopped.")
-        # WINDOW: Invalid Gateway HwAddr !
-	alert = Alert(0,"'Etherwall -  Invalid Gateway HwAddr !'","'Daemon Stopped: MAC address detected for the Gateway: \n%s %s is not valid. \nIts indicated a ARP Spoofing/Poisoning Storm Attack !'" % (self.gw,hwaddr))
-	alert.start()
-	sys.exit(1)
-	
-      if hwaddr:
-	self.logger.info("MAC address detected for the Gateway: %s %s" % (self.gw,hwaddr))
+      if gwhwaddr:
+	self.logger.info("MAC address detected for the Gateway: %s %s" % (self.gw,gwhwaddr))
+	return gwhwaddr
       else:
-	# fatal error will be stop the daemon
-	self.logger.error("Couldn't obtain the gateway MAC address")
-	self.logger.error("Daemon Stopped.")
-	# WINDOW: Couldn't obtain the gateway MAC address !
-	alert = Alert(0,"'Etherwall - Couldn't obtain the gateway MAC address !'","'Daemon Stopped: Couldn't obtain the gateway MAC address.'")
+	# WINDOW: Couldn't obtain the gateway MAC address 
+	alert = Alert(0,"'Etherwall - Daemon Stopped'","'Couldn`t obtain the gateway MAC address.'",self.logger)
 	alert.start()
-	sys.exit(1)
-      return hwaddr
-
+	time.sleep(3)
+	
     def _startEtherWall(self):
       """ Starting Etherwall """
       
@@ -144,15 +121,11 @@ class etherWall(UnixDaemon):
       if os.system("arp -s %s %s" % (self.gw, self.gwmac)):
 	self.logger.error("Couldn't add the static entry for the Gateway")
   
-      # starting arptables rules
-      self.logger.info("Starting ARP Wall...")
-      chain_start()
-      # append gateway to chain
+      # append gateway & another subnet/segment to chain
       app_gw_to_chain(gw=self.gw, mac=self.gwmac)
-      # append another subnet/segment to chain
       app_another_subnet("%s/%s" % (self.myip,self.cidr))
 
-      # after running ARP wall, adding the specified host to ARP cache tables as static ARP
+      # adding the specified host to ARP cache tables as static ARP
       # and append host to chain.
       self.allow_host = []
       if (imp_allow_host()[0] == 0):
@@ -169,36 +142,33 @@ class etherWall(UnixDaemon):
 		# append host to chain 
 		app_host_to_chain(ip=host.split()[0], mac=host.split()[1])
       else:
-	# fatal error will be stoped the daemon
-	self.logger.error(imp_allow_host()[1])
-	self.logger.error("Daemon Stopped.")
-	sys.exit(1)
-      
+	# WINDOW: Bad parsing
+	alert = Alert(0,"'Etherwall - Daemon Stopped'","'%s.'" % (imp_allow_host()[1]),self.logger)
+	alert.start()
+	time.sleep(3)
+  
       # sniffing mode
       if (self.promisc == "no"):
         self.logger.info("Device %s left promiscuous mode..." % (self.iface))
 	scapy.all.conf.sniff_promisc = 0 
       else:
 	self.logger.info("Device %s entered promiscuous mode..." % (self.iface))
-  
+	
       # starting realtime protection
       try:
 	self.logger.info("Starting Realtime Protection...")
-	# starting arp monitor
 	arpmon = ArpMon(myip=self.myip, mymac=self.mymac, gw=self.gw, gwmac=self.gwmac, iface=self.iface, cidr=self.cidr, logger=self.logger, allow_host=self.allow_host)
 	arpmon._startArpMon()
       except:
 	if not check_if_up(iface=self.iface): # interface down
-	  # WINDOW: interface error !
-	  self.logger.error("Interface: The interface %s went down" % self.iface)
-	  alert = Alert(0,"'Etherwall - Interface Error !'","'Daemon Stoped: The interface %s went down.'" % (self.iface))
+	  # WINDOW: interface error 
+	  alert = Alert(0,"'Etherwall - Daemon Stopped'","'Interface: The interface %s went down.'" % (self.iface), self.logger)
 	  alert.start()
+	  time.sleep(3)
         else:
-	  # WINDOW: uknown error !
-	  self.logger.error("Realtime Protection Failed")
-	  alert = Alert(0,"'Etherwall - Realtime Protection Failed !'","'Daemon Stopped: Realtime Protection Stoped.'")
+	  # WINDOW: uknown error 
+	  alert = Alert(0,"'Etherwall - Daemon Stopped'","'Realtime Protection Failed.'",self.logger)
 	  alert.start()
-	self.logger.error("Daemon Stopped.")
-	sys.exit(1)
+	  time.sleep(3)
 	
 ## EOF ##

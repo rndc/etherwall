@@ -132,35 +132,35 @@ def get_if_conf_ff():
 	    values = values
 	  else:
 	    msg_code = 1 # code number
-	    msg = ("Parsing: '%s': must be 'yes' or 'no', Line: %s" % (line.strip(),n)) # message
+	    msg = ("Parsing: `%s`: must be `yes` or `no`, etherwall.conf: Line %s" % (line.strip(),n)) # message
 	    break
 	if (options) == ('promisc'):
 	  if (values == 'yes') or (values == 'no'):
 	    values = values
 	  else:
 	    msg_code = 1
-	    msg = ("Parsing: '%s': must be 'yes' or 'no', Line: %s" % (line.strip(),n))
+	    msg = ("Parsing: `%s`: must be `yes` or `no`, etherwall.conf: Line %s" % (line.strip(),n))
 	    break
 	if (options == 'iface'):
 	  if values in get_if_all():
 	     values = values
 	  else:
 	    msg_code = 2 
-	    msg = ("Interface: '%s': Device not found, Line: %s" % (line.strip(),n))
+	    msg = ("Interface: `%s`: Device not found, etherwall.conf: Line %s" % (line.strip(),n))
 	if (options == 'ipaddr') or (options == 'gwaddr') or (options == 'netmask'):
 	  if not check_ipv4(addr=values):
 	    msg_code = 1
-	    msg = ("Parsing: '%s': Invalid IPv4 address, Line: %s" % (line.strip(),n))
+	    msg = ("Parsing: `%s`: Invalid IPv4 address, etherwall.conf: Line %s" % (line.strip(),n))
 	    break
 	if (options == 'hwaddr') or (options == 'gwhwaddr'):
 	    if not hwmatch.match(values):
 	      msg_code = 1
-	      msg = ("Parsing: '%s': Invalid MAC address, Line: %s" % (line.strip(),n))
+	      msg = ("Parsing: `%s`: Invalid MAC address, etherwall.conf: Line %s" % (line.strip(),n))
 	      break
 	config[options] = values
       else:
 	msg_code = 1 
-	msg = ("Parsing: '%s': Unknown Format, Line: %s" % (line.strip(),n))
+	msg = ("Parsing: `%s`: Unknown Format, etherwall.conf: Line %s" % (line.strip(),n))
 	break
     elif re.match('^#',line.strip()):
       pass
@@ -168,13 +168,13 @@ def get_if_conf_ff():
       pass
     else:
       msg_code = 1 
-      msg = ("Parsing: '%s': Bad Format, Line: %s" % (line.strip(),n))
+      msg = ("Parsing: `%s`: Bad Format, etherwall.conf: Line %s" % (line.strip(),n))
       break
       
   for keys in config:
     if (config[keys] == '' and msg_code == 0 and config['manual'] == 'yes'):
       msg_code = 3 
-      msg = ("Configuration: '%s' is Needed, Line: %s" % (keys,n))
+      msg = ("Configuration: `%s` is Needed, etherwall.conf: Line %s" % (keys,n))
       break
         
   if (msg_code == 0):
@@ -319,11 +319,11 @@ def imp_allow_host():
       hwaddr = host.strip().split('-')[1]
       if not (check_ipv4(addr=ipaddr)):
 	msg_code = 1 
-	msg = ("Parsing: '%s': Invalid IPv4 address, Line: %s" % (host.strip(),n))
+	msg = ("Parsing: `%s`: Invalid IPv4 address, allow.conf: Line %s" % (host.strip(),n))
 	break
       if not hwmatch.match(hwaddr):
 	msg_code = 1 
-	msg = ("Parsing: '%s': Invalid MAC address, Line: %s" % (host.strip(),n))
+	msg = ("Parsing: `%s`: Invalid MAC address, allow.conf: Line %s" % (host.strip(),n))
 	break
       allow_host.append("%s %s" % (ipaddr,hwaddr.lower()))
     elif re.match('^#',host.strip()):
@@ -332,7 +332,7 @@ def imp_allow_host():
       pass
     else:
       msg_code = 1 
-      msg = ("Parsing: '%s': Bad Format, Line: %s" % (host.strip(),n))
+      msg = ("Parsing: `%s`: Bad Format, allow.conf: Line %s" % (host.strip(),n))
       break
       
   if (msg_code == 0):

@@ -170,12 +170,10 @@ class ArpMon():
 	pt = ProtectionThread(myip=self.myip, mymac=self.mymac, gw=self.gw, gwmac=self.gwmac, iface=self.iface, logger=self.logger, allow_host=self.allow_host)
 	pt.start()
       except:
-	self.logger.error("Realtime Protection Stoped: Thread Over !")
-	self.logger.error("Daemon Stopped.")
 	# WINDOW: thread over !
-	alert = Alert(0,"'Etherwall - Thread Over !'","'Daemon Stopped: Realtime Protection Stoped: Thread Over !'")
+	alert = Alert(0,"'Etherwall - Daemon Stopped'","'Realtime Protection Stoped: Thread Over !'",self.logger)
 	alert.start()
-	sys.exit(1)
+	time.sleep(3)
 
     def _earlyWarning(self, spoofer, target):	
       if (spoofer in self.spoofer_list):
@@ -183,7 +181,7 @@ class ArpMon():
       else:
 	self.spoofer_list.append(spoofer)
 	# WINDOW: spoofing detected !
-	alert = Alert(1,"'Etherwall - ARP Spoofing Detected !'","'ARP from %s [%s] \npretends to be %s.'" % (spoofer.split()[0],spoofer.split()[1],target))
+	alert = Alert(1,"'Etherwall - ARP Spoofing Detected !'","'ARP from %s [%s] \npretends to be %s.'" % (spoofer.split()[0],spoofer.split()[1],target),self.logger)
 	alert.start()
 
 ## EOF ##
