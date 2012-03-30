@@ -4,219 +4,131 @@
 #  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
 #  This program is published under a GPLv3 license
 
-who_install=`whoami`
-
-function etherwall_ctl_script {
-echo '#!/bin/bash
-#
-#  This file is part of Etherwall
-#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
-#  This program is published under a GPLv3 license
-#
-#  Provides: etherwall
-#  Short-Description: Start/stop the etherwall network security daemon
-#  Description: Controls the main etherwall network security daemon "etherwall.py"
-
-path_script="/opt/etherwall/etherwall.py"
-case $1 in 
-	'start')
-	start="$path_script start"
-	$start
-	;;
-	'stop')
-	stop="$path_script stop"
-	$stop
-	;;
-	'restart')
-	restart="$path_script restart"
-	$restart
-	;;
-	'status')
-	status="$path_script status"
-	$status
-	;;
-	*)
-	echo "Usage: etherwall {start|stop|restart|status}"
-	exit 1
-	;;
-esac
-' > etherwall
-}
-
-
-function etherwall_console_script {
-echo '#!/bin/bash
-#
-#  This file is part of Etherwall
-#  Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
-#  This program is published under a GPLv3 license
-#
-#  Provides: ethwconsole
-#  Short-Description: Command interactive program of etherwall
-#  Description: This script is a command etherwall interactive programs to communicate with
-#               the daemon etherwall, and provide useful tools related to data link layer.
-
-path_script="/opt/etherwall/ethwconsole.py"
-
-$path_script' > ethwconsole
-}
-
-function install_arptables {
-arptables_link="http://sourceforge.net/projects/ebtables/files/arptables/arptables-v0.0.3/arptables-v0.0.3-4.tar.gz/download"
-
-# downloading arptables
-c_url=$(whereis curl | awk '{print $2}')
-if [ "$c_url" != "" ]; then 
-  echo -n -e "\nDownloading Arptables from $arptables_link\n\n"
-  curl -L -o /tmp/arptables-v0.0.3-4.tar.gz $arptables_link
-  echo -n -e "\nDownload Complete !, File saved in /tmp/arptables-v0.0.3-4.tar.gz\n"
-else
-  echo -n -e "\nError: Download Failed, The CURL program not found. Please download arptables manually\n"
+# check if we're root
+if [ "$(whoami)" != "root" ]; then
+  echo "Error: you need to be root to install etherwall"
   exit 1
 fi
 
-# installing arptables
-gnu_c=$(whereis gcc | awk '{print $2}')
-gnu_make=$(whereis make | awk '{print $2}')
-if [ "$gnu_c" != "" ]; then 
-  if [ "$gnu_make" != "" ]; then
-    echo -n -e "\nInstalling arptables...\n\n"
-    tar -zxf /tmp/arptables-v0.0.3-4.tar.gz 
-    cd arptables-v0.0.3-4
-    make && make install
-    ln -s /usr/local/sbin/arptables/arptables /usr/sbin  
-    ln -s /usr/local/sbin/arptables/arptables-restore /usr/sbin
-    ln -s /usr/local/sbin/arptables/arptables-save /usr/sbin        
-    cd ..
-    rm -r arptables-v0.0.3-4
-  else
-    echo -n -e "\nError: Compile Failed, The GNU MAKE program not found\n"
-    exit 1
-  fi
-else
-  echo -n -e "\nError: Compile Failed, The GNU C program not found\n"
-  exit 1
-fi
-}
-
-function check_dependencies {
-echo "Checking dependencies..."
-
-# Arptables
-arpTables=$(whereis arptables | awk '{print $2}')
-if [ "$arpTables" == "" ]; then
-  echo "Error: The depedencies 'arptables' not installed"
-  echo -n -e "\nDo you want to install arptables [Y/n]? "
-  read lanjut
-  if [ "$lanjut" == "Y" ] || [ "$lanjut" == "y" ]; then 
-    install_arptables
-  else
-    exit 0
-  fi
-fi
-
-# Tcpdump
-tcpDump=$(whereis tcpdump | awk '{print $2}')
-if [ "$tcpDump" == "" ]; then
-  echo -n -e "Error: The depedencies 'tcpdump' not installed\n"
+# ask for confirmation
+echo -n "Are you sure you want install etherwall?[y/n] "
+read cek
+if [ "$cek" != "y" -a "$cek" != "Y" ]; then
+  echo "Installation aborted."
   exit 1
 fi
 
-# Arp
-arpUnix=$(whereis arp | awk '{print $2}')
-if [ "$arpUnix" == "" ]; then
-  echo -n -e "Error: The depedencies 'arp' not installed\n"
+# show the license
+more doc/COPYING
+echo -n "Do you agree with the license?[y/n] "
+read cek
+if [ "$cek" != "y" -a "$cek" != "Y" ]; then
+  echo "Installation aborted."
   exit 1
 fi
-
-# Ifconfig
-ifUnix=$(whereis ifconfig | awk '{print $2}')
-if [ "$ifUnix" == "" ]; then
-  echo -n -e "Error: The depedencies 'ifconfig' not installed\n"
-  exit 1
-fi
-}
-
-function main {
-echo -e "Installing etherwall:\n"
 
 # checking dependencies
-check_dependencies
+for d in ifconfig tcpdump arp; do
+  if [ "$(whereis $d | awk '{print $2}')" = "" ]; then
+    echo "Error: $d not installed."
+    exit 1
+  fi
+done
 
-# creating etherwall installation directory
-echo "Creating etherwall installation directory..."
+if [ "$(whereis arptables | awk '{print $2}')" = "" ]; then
+  if [ "$(whereis curl | awk '{print $2}')" = "" ]; then
+    echo "Error: curl not found. Cannot download arptables"
+    exit 1
+  fi
+  curl -L -o /tmp/arptables-v0.0.3-4.tar.gz  "http://sourceforge.net/projects/ebtables/files/arptables/arptables-v0.0.3/arptables-v0.0.3-4.tar.gz/download"
+
+  if [ "$(whereis gcc | awk '{print $2}')" = "" -o "$(whereis make | awk '{print $2}')" = "" ]
+  then
+    echo "Error: cannot find GNU compiler"
+    exit 1
+  fi
+
+  CWD=`pwd`
+  cd tmp
+  tar -zxvf arptables-v0.0.3-4.tar.gz && cd arptables-v0.0.3-4
+  make && make install
+  ln -s /usr/local/sbin/arptables/arptables /usr/sbin
+  ln -s /usr/local/sbin/arptables/arptables-restore /usr/sbin
+  ln -s /usr/local/sbin/arptables/arptables-save /usr/sbin
+  cd .. && rm -r arptables-v0.0.3-4*
+  cd $CWD
+fi
+
+# creating etherwall installation directory and start copying files
+echo "Creating etherwall installation directory and copying files..."
 mkdir /opt/etherwall
-
-# copying all file
-echo "Copying all file to '/opt/etherwall'"
 cp -r * /opt/etherwall
-rm /opt/etherwall/install.sh
-rm /opt/etherwall/uninstall.sh
+rm /opt/etherwall/{install.sh,uninstall.sh}
 
-# creating etherwall file
-echo "Creating etherwall file..."
-touch etherwall
-etherwall_ctl_script
+# create etherwall control script
+echo "Creating etherwall script..."
+cat << EOF > /sbin/etherwall
+#!/bin/bash
+#
+# This file is part of Etherwall
+# Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+# This program is published under a GPLv3 license
+#
+# Provides: etherwall
+# Short-Description: Start/stop the etherwall network security daemon
+# Description: Controls the main etherwall network security daemon "etherwall.py"
 
-# copying etherwall program to /sbin
-echo "Copying etherwall program to '/sbin'"
-chmod u+x etherwall
-mv etherwall /sbin/etherwall
+path_script="/opt/etherwall/etherwall.py"
+case \$1 in
+  'start')
+    \$path_script start
+    ;;
+  'stop')
+    \$path_script stop
+    ;;
+  'restart')
+    \$path_script restart
+    ;;
+  'status')
+    \$path_script status
+    ;;
+  *)
+    echo "Usage: etherwall {start|stop|restart|status}"
+    exit 1
+    ;;
+esac
+EOF
+chmod +x /sbin/etherwall
 
-# creating ethwconsole file
-echo "Creating ethwconsole file..."
-touch ethwconsole
-etherwall_console_script
+# create etherwall console script
+echo "Creating etherwall console script..."
+cat << EOF > /sbin/ethwconsole
+#!/bin/bash
+#
+# This file is part of Etherwall
+# Copyright (C) Agus Bimantoro <l0g.bima@gmail.com>
+# This program is published under a GPLv3 license
+#
+# Provides: ethwconsole
+# Short-Description: Command interactive program of etherwall
+# Description: This script is a command etherwall interactive programs to communicate with
+#              the daemon etherwall, and provide useful tools related to data link layer.
 
-# copying ethwconsole program to /sbin
-echo "Copying ethwconsole program to '/sbin'"
-chmod u+x ethwconsole
-mv ethwconsole /sbin/ethwconsole
+/opt/etherwall/ethwconsole.py
+EOF
+chmod +x /sbin/ethwconsole
 
-# copying etherwall file configuration to /etc
-echo "Copying etherwall file configuration to '/etc'"
+# copying configuration files
+echo "Copying etherwall configuration files..."
 cp -r config /etc/etherwall
 
-# copying etherwall manual page to /usr/share/man/man8
-echo "Copying etherwall manual pages to '/usr/share/man/man8'"
+# copying manual file
+echo "Copying manual pages..."
 cp doc/*.gz /usr/share/man/man8
 
-# set executable flag
-echo "Chmod u+x /opt/etherwall/etherwall.py"
-chmod u+x /opt/etherwall/etherwall.py
-echo "Chmod u+x /opt/etherwall/ethwconsole.py"
-chmod u+x /opt/etherwall/ethwconsole.py
-echo "Chmod u+x /opt/etherwall/MsgBox.py"
-chmod u+x /opt/etherwall/MsgBox.py
-echo "Chmod u+x -R /opt/etherwall/tool"
-chmod u+x -R /opt/etherwall/tool
+# setting executable flags
+echo "Setting executable flags..."
+chmod +x -R /opt/etherwall/{etherwall.py,ethwconsole.py,MsgBox.py,tool}
 
-echo -e "\nInstallation finished. Type etherwall or ethwconsole as root to run.\n"
-
-exit 0
-}
-
-if [ "$who_install" == "root" ]; then
-	echo -n -e "Are you sure you want to install etherwall [Y/n]? "
-	read lanjut
-	if [ "$lanjut" == "Y" ] || [ "$lanjut" == "y" ]; then	
-		echo -n -e "\nType \033[4menter\033[0m to read the license of etherwall..."
-		read 
-		more doc/COPYING
-                loops="True"
-                while [ $loops == "True" ]; do
-		  echo -n -e "\nDo you aggree [Y/n]? "
-		  read setuju
-		  if [ "$setuju" == "Y" ] || [ "$setuju" == "y" ]; then	
-			main
-		  elif [ "$setuju" == "N" ] || [ "$setuju" == "n" ]; then
-			exit 0
-		  fi
-                done
-	else
-		exit 0
-	fi
-else
-	echo -e "Error: Cannot install etherwall,\n       it may require superuser privileges (eg. root)."
-	exit 1
-fi
+# all done
+echo "Installation finished. Type 'etherwall' or 'ethwconsole' as root to run etherwall."
