@@ -37,3 +37,4 @@ echo "Removing etherwall manual pages..."
   rm /usr/share/man/man8/{etherwall.8.gz,etherwall-id.8.gz,ethwconsole.8.gz,ethwconsole-id.8.gz} 2> /dev/null
 
 echo "All done..."
+
