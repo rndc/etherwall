@@ -42,14 +42,13 @@ if [ "$(whereis arptables | awk '{print $2}')" = "" ]; then
   fi
   curl -L -o /tmp/arptables-v0.0.3-4.tar.gz  "http://sourceforge.net/projects/ebtables/files/arptables/arptables-v0.0.3/arptables-v0.0.3-4.tar.gz/download"
 
-  if [ "$(whereis gcc | awk '{print $2}')" = "" -o "$(whereis make | awk '{print $2}')" = "" ]
-  then
+  if [ "$(whereis gcc | awk '{print $2}')" = "" -o "$(whereis make | awk '{print $2}')" = "" ]; then
     echo "Error: cannot find GNU compiler"
     exit 1
   fi
 
   CWD=`pwd`
-  cd tmp
+  cd /tmp
   tar -zxvf arptables-v0.0.3-4.tar.gz && cd arptables-v0.0.3-4
   make && make install
   ln -s /usr/local/sbin/arptables/arptables /usr/sbin
@@ -125,6 +124,7 @@ cp -r config /etc/etherwall
 # copying manual file
 echo "Copying manual pages..."
 cp doc/*.gz /usr/share/man/man8
+chmod +r /usr/share/man/man8/{etherwall.8.gz,etherwall-id.8.gz,ethwconsole.8.gz,ethwconsole-id.8.gz}
 
 # setting executable flags
 echo "Setting executable flags..."
