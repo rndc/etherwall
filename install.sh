@@ -51,9 +51,9 @@ if [ "$(whereis arptables | awk '{print $2}')" = "" ]; then
   cd /tmp
   tar -zxvf arptables-v0.0.3-4.tar.gz && cd arptables-v0.0.3-4
   make && make install
-  ln -s /usr/local/sbin/arptables/arptables /usr/sbin
-  ln -s /usr/local/sbin/arptables/arptables-restore /usr/sbin
-  ln -s /usr/local/sbin/arptables/arptables-save /usr/sbin
+  ln -s /usr/local/sbin/arptables /usr/sbin
+  ln -s /usr/local/sbin/arptables-restore /usr/sbin
+  ln -s /usr/local/sbin/arptables-save /usr/sbin
   cd .. && rm -r arptables-v0.0.3-4*
   cd $CWD
 fi
