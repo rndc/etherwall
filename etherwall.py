@@ -40,13 +40,10 @@ if (__name__ == "__main__"):
       elif ('stop' == sys.argv[1]):
 	# kill the daemon
 	service.stop()   
-	# Change the ARP tables rules, Inclusive -> Exclusive
+	# change the ARP tables rules, Inclusive -> Exclusive
 	chain_stop()                   
-	# delete the static arp router
-	try:              
-	  os.system('arp -d %s &> /dev/null' % (get_if_conf()[3]))
-	except TypeError:
-	  pass
+	# flushing arp cache
+	flush_arp_cache()
       elif ('restart' == sys.argv[1]):
 	# restart the daemon
         service.restart()              

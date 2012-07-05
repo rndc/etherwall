@@ -19,6 +19,9 @@ from socket import *
 SYS_NET_PATH  = "/sys/class/net"  # Is a directory
 PROC_NET_PATH = "/proc/net/dev"   # Is a file
 
+# Linux ARP cache path
+LINUX_NET_ARP = "/proc/net/arp"  
+
 # From linux/sockios.h
 # socket configuration controls
 SIOCGIFFLAGS   = 0x8913         # get flags
@@ -428,5 +431,12 @@ def check_mac_vendor(mac=None, info=False, macvendor=False):
       return mac
   else:
     return False  # invalid MAC address
+
+def flush_arp_cache():
+  """ 
+    Delete all ARP entry
+  """
+  for ip in open(LINUX_NET_ARP,'r'):
+    os.system("arp -d %s &> /dev/null" % (ip.split()[0]))
     
 ## EOF ##

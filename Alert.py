@@ -35,7 +35,8 @@ class Alert(threading.Thread):
 	
 	# reset rules
 	chain_stop()             
-	os.system('arp -d %s &> /dev/null' % (get_if_conf()[3]))
+	# flushing arp cache
+	flush_arp_cache()
 	
 	# kill service
 	pf = file(self.pidfile, 'r')

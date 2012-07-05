@@ -14,45 +14,29 @@ from scapy.all import *
 PtMDefense = False
 
 class ProtectionThread(threading.Thread):
-    def __init__(self, myip=None, mymac=None, gw=None, gwmac=None, iface=None, logger=None, allow_host=[]):
+    def __init__(self, myip=None, mymac=None, target=None, iface=None, logger=None, allow_host={}):
       threading.Thread.__init__(self)
-      self.myip = myip
-      self.mymac = mymac
-      self.gw = gw
-      self.gwmac = gwmac
-      self.iface = iface
-      self.logger = logger
-      self.allow_host = allow_host
-      
-      if self.allow_host:
-	PtMDefense = True
-      else:
-	PtMDefense = False
+      self.myip = myip              # Own IP
+      self.mymac = mymac            # Own MAC
+      self.target = target          # Protected target
+      self.iface = iface            # Own Interface
+      self.logger = logger          # Logger
+      self.allow_host = allow_host  # Allowed host = Protected hosts
 
     def run(self):
-      scapy.all.conf.verb = 0
-      scapy.all.conf.iface = self.iface
+      """ Defense Solution """
+      scapy.all.conf.verb = 0            # Verbosity off
+      scapy.all.conf.iface = self.iface  # Set interface
       
-      """ Point to Point Defense Solution """
-      self.logger.info("Point to Point Protection Started...")
-      # Construct ARP 
-      arp = scapy.all.ARP(hwdst=self.gwmac, hwsrc=self.mymac, pdst=self.gw, psrc=self.myip, op=1)
-      # Construct Ether frame
-      frame = scapy.all.Ether(dst=self.gwmac)
-      # Send packet
-      scapy.all.sendp(frame/arp)
+      try:
+	self.logger.info("Protection Thread to %s %s Started..." % (self.target,self.allow_host[self.target]))
+	# Construct ARP 
+	arp = scapy.all.ARP(hwdst=self.allow_host[self.target], hwsrc=self.mymac, pdst=self.target, psrc=self.myip, op=1)
+	# Construct Ether frame
+	frame = scapy.all.Ether(dst=self.allow_host[self.target])
+	# Send packet
+	scapy.all.sendp(frame/arp)
+      except KeyError:
+	pass
       
-      """ Point to Multipoint Defense Solution """
-      if PtMDefense:
-	self.logger.info("Point to Multipoint Protection Started...")
-	for host in self.allow_host:
-	  ipdst = host.split()[0]
-	  macdst = host.split()[1]
-	  # Construct ARP 
-	  arp = scapy.all.ARP(hwdst=macdst, hwsrc=self.mymac, pdst=ipdst, psrc=self.myip, op=2)
-	  # Construct Ether frame
-	  frame = scapy.all.Ether(src=self.mymac,dst=macdst)
-	  # Send packet
-	  scapy.all.sendp(frame/arp)
-
 ## EOF ##

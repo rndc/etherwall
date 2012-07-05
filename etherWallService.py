@@ -20,6 +20,7 @@ class etherWall(UnixDaemon):
       
     def run(self):
       self._startArpWall()
+      self._flushArpCache()
       self._initNet()
       self._startEtherWall()
       
@@ -29,6 +30,13 @@ class etherWall(UnixDaemon):
       """
       self.logger.info("Changing arptables policy on chain INPUT & OUTPUT...")
       chain_start()
+      
+    def _flushArpCache(self):
+      """
+	Flushing ARP cache
+      """
+      self.logger.info("Deleting all ARP entries...")
+      flush_arp_cache()
         
     def _initNet(self):
       """
@@ -102,7 +110,12 @@ class etherWall(UnixDaemon):
       """
       
       self.logger.info("Trying to detect MAC address of the Gateway...")
-      gwhwaddr = ObtainGwHwAddr(self.iface,self.gw,self.myip,self.mymac)
+      
+      # Obtaining by DADM (Duplicate Address Detection Mode)
+      gwhwaddr = ObtainGwHwAddr(self.iface,self.mymac,"0.0.0.0",self.gw)
+      # If the router just receive IP from the same segment
+      if not gwhwaddr:
+	gwhwaddr = ObtainGwHwAddr(self.iface,self.mymac,self.myip,self.gw)
 	
       if gwhwaddr:
 	self.logger.info("MAC address detected for the Gateway: %s %s" % (self.gw,gwhwaddr))
@@ -127,14 +140,14 @@ class etherWall(UnixDaemon):
 
       # adding the specified host to ARP cache tables as static ARP
       # and append host to chain.
-      self.allow_host = []
+      self.allow_host = {}
       if (imp_allow_host()[0] == 0):
 	if imp_allow_host()[1]:
 	  for host in imp_allow_host()[1]:
 	    if (host.split()[1] == ("%s" % (self.mymac)) or host.split()[1] == ("%s" % (self.gwmac))):
 	      self.logger.critical("Forbidden: '%s': The MAC address same with your MAC & Gateway" % (host))
 	    else:
-	      self.allow_host.append(host)
+	      self.allow_host['%s' % (host.split()[0])] = "%s" % (host.split()[1])
 	      self.logger.info("Adding static entry for the Host: %s" % (host))
 	      if os.system("arp -s %s" % (host)):
 		self.logger.error("Couldn't add the static entry for the Host")
@@ -166,8 +179,8 @@ class etherWall(UnixDaemon):
 	  alert.start()
 	  time.sleep(3)
         else:
-	  # WINDOW: uknown error 
-	  alert = Alert(0,"'Etherwall - Daemon Stopped'","'Realtime Protection Failed.'",self.logger)
+	  # WINDOW: uknown/unexpected error 
+	  alert = Alert(0,"'Etherwall - Daemon Stopped'","'Unexpected Error: %s'" % (sys.exc_info()[0]),self.logger)
 	  alert.start()
 	  time.sleep(3)
 	
