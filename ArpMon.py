@@ -14,20 +14,21 @@ from scapy.all import *
 from NetMod import *
 from ProtectionThread import *
 from Alert import Alert
+from Error import Error
 
 class ArpMon():
 	""" ARP monitoring """ 
 	def __init__(self, myip=None, mymac=None, gw=None, gwmac=None, iface=None, cidr=None, logger=None, allow_host={}):
-		self.myip = myip				# Own IP
-		self.mymac = mymac				# Own MAC
-		self.gw = gw					# Gateway IP
-		self.gwmac = gwmac				# Gateway MAC
-		self.iface = iface				# Own interface
-		self.cidr = cidr				# Classless inter-domain routing
-		self.logger = logger				# Logger
-		self.allow_host = allow_host			# Allowed host = Protected hosts
-		self.host_list = {}				# Hosted list
-		self.spoofer_list = []				# Spoofer list 
+		self.myip = myip							# Own IP
+		self.mymac = mymac							# Own MAC
+		self.gw = gw								# Gateway IP
+		self.gwmac = gwmac							# Gateway MAC
+		self.iface = iface							# Own interface
+		self.cidr = cidr							# Classless inter-domain routing
+		self.logger = logger						# Logger
+		self.allow_host = allow_host				# Allowed host = Protected hosts
+		self.host_list = {}							# Hosts list
+		self.spoofer_list = []						# Spoofer list 
 		self.allow_host[self.myip] = self.mymac		# Add new entry (own ip&mac) to allow_host
 		self.allow_host[self.gw] = self.gwmac		# Add new entry (gateway ip&mac) to allow_host
 		
@@ -132,10 +133,8 @@ class ArpMon():
 			pt = ProtectionThread(myip=self.myip, mymac=self.mymac, target=target, iface=self.iface, logger=self.logger, allow_host=self.allow_host)
 			pt.start()
 		except:
-			# WINDOW: thread over !
-			alert = Alert(0,"'Etherwall - Daemon Stopped'","'Realtime Protection Stoped: Thread Over !'",self.logger)
-			alert.start()
-			time.sleep(3)
+			# ERROR: thread over !
+			Error("'Etherwall - Daemon Stopped'","'Realtime Protection Stoped: Thread Over !'",self.logger)
 	
 	def _earlyWarning(self, spoofer, target):
 		if (spoofer in self.spoofer_list):
@@ -143,7 +142,7 @@ class ArpMon():
 		else:
 			self.spoofer_list.append(spoofer)
 			# WINDOW: spoofing detected !
-			alert = Alert(1,"'Etherwall - ARP Spoofing Detected !'","'ARP from %s [%s] \npretends to be %s.'" % (spoofer.split()[0],spoofer.split()[1],target),self.logger)
+			alert = Alert("'Etherwall - ARP Spoofing Detected !'","'ARP from %s [%s] \npretends to be %s.'" % (spoofer.split()[0],spoofer.split()[1],target))
 			alert.start()
 
 ## EOF ##

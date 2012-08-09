@@ -11,7 +11,7 @@ from UnixDaemon import UnixDaemon
 from NetMod import *
 from GenWall import *
 from ArpMon import *
-from Alert import Alert
+from Error import Error
 from ObtainGwHwAddr import ObtainGwHwAddr 
 
 class etherWall(UnixDaemon):
@@ -68,10 +68,8 @@ class etherWall(UnixDaemon):
 				self.cidr = get_if_conf_ff()[1]['cidr']
 				self.promisc = get_if_conf_ff()[1]['promisc']
 				if not check_if_up(iface=self.iface):
-					# WINDOW: Interface is down
-					alert = Alert(0,"'Etherwall - Daemon Stopped'","'Interface: %s is down.'" % (self.iface),self.logger)
-					alert.start()
-					time.sleep(3)
+					# ERROR: Interface is down
+					Error("'Etherwall - Daemon Stopped'","'Interface: %s is down.'" % (self.iface),self.logger)
 			else:
 				# if the etherwall running with the automatic configuration detection
 				if get_if_conf():
@@ -84,58 +82,49 @@ class etherWall(UnixDaemon):
 					self.gwmac = self.getGwMac() 
 					self.promisc = get_if_conf_ff()[1]['promisc']
 				else:
-					# WINDOW: No Device Up or No IPv4 address assigned
-					alert = Alert(0,"'Etherwall - Daemon Stopped'","'Interface: No Device Up or No IPv4 address assigned.'",self.logger)
-					alert.start()
-					time.sleep(3)
+					# ERROR: No Device Up or No IPv4 address assigned
+					Error("'Etherwall - Daemon Stopped'","'Interface: No Device Up or No IPv4 address assigned.'",self.logger)
 		elif (get_if_conf_ff()[0] == 1):
-			# WINDOW: Bad parsing
-			alert = Alert(0,"'Etherwall - Daemon Stopped'","'%s.'" % (get_if_conf_ff()[1]),self.logger)
-			alert.start()
-			time.sleep(3)
+			# ERROR: Bad parsing
+			Error("'Etherwall - Daemon Stopped'","'%s.'" % (get_if_conf_ff()[1]),self.logger)
 		elif (get_if_conf_ff()[0] == 2):
-			# WINDOW: Device not found
-			alert = Alert(0,"'Etherwall - Daemon Stopped'","'%s.'" % (get_if_conf_ff()[1]),self.logger)
+			# ERROR: Device not found
+			Error("'Etherwall - Daemon Stopped'","'%s.'" % (get_if_conf_ff()[1]),self.logger)
 			alert.start()
 			time.sleep(3)
 		elif (get_if_conf_ff()[0] == 3):
-			# WINDOW: Incomplete configuration format
-			alert = Alert(0,"'Etherwall - Daemon Stopped'","'%s.'" % (get_if_conf_ff()[1]),self.logger)
-			alert.start()
-			time.sleep(3)
+			# ERROR: Incomplete configuration format
+			Error("'Etherwall - Daemon Stopped'","'%s.'" % (get_if_conf_ff()[1]),self.logger)
 	
 	def getGwMac(self, gwhwaddr=None):
 		"""
 			Obtain the gateway MAC address 
 		"""
-		
+		      
+		# First attempt by DADM (Duplicate Address Detection Mode)
 		self.logger.info("Trying to detect MAC address of the Gateway...")
-      
-		# Obtaining by DADM (Duplicate Address Detection Mode)
-		gwhwaddr = ObtainGwHwAddr(self.iface,self.mymac,"0.0.0.0",self.gw)
-		# If the router just receive IP from the same segment
+		gwhwaddr = ObtainGwHwAddr(self.iface,self.mymac,"0.0.0.0",self.gw,self.logger)
+		
+		# If the first attempt failed
 		if not gwhwaddr:
-			gwhwaddr = ObtainGwHwAddr(self.iface,self.mymac,self.myip,self.gw)
+			self.logger.info("Re-trying to detect MAC address of Gateway...")
+			gwhwaddr = ObtainGwHwAddr(self.iface,self.mymac,self.myip,self.gw,self.logger)
 	
 		if gwhwaddr:
 			self.logger.info("MAC address detected for the Gateway: %s %s" % (self.gw,gwhwaddr))
 			return gwhwaddr
 		else:
-			# WINDOW: Couldn't obtain the gateway MAC address 
-			alert = Alert(0,"'Etherwall - Daemon Stopped'","'Couldn`t obtain the gateway MAC address.'",self.logger)
-			alert.start()
-			time.sleep(3)
-	
+			# ERROR: Couldn't obtain the gateway MAC address 
+			Error("'Etherwall - Daemon Stopped'","'Couldn`t obtain the gateway MAC address'",self.logger)
+
 	def _startEtherWall(self):
 		""" Starting Etherwall """
       
 		# adding router/gateway to ARP cache table as static ARP
 		self.logger.info("Adding static entry for the Gateway: %s %s" % (self.gw, self.gwmac))
 		if os.system("arp -s %s %s" % (self.gw, self.gwmac)):
-			# WINDOW: Couldn't add the static entry for the Gateway
-			alert = Alert(0,"'Etherwall - Daemon Stopped'","'Couldn't add the static entry for the Gateway.'",self.logger)
-			alert.start()
-			time.sleep(5)
+			# ERROR: Couldn't add the static entry for the Gateway
+			Error("'Etherwall - Daemon Stopped'","'Couldn't add the static entry for the Gateway.'",self.logger)
   
 		# append gateway & another subnet/segment to chain
 		app_gw_to_chain(gw=self.gw, mac=self.gwmac)
@@ -150,18 +139,16 @@ class etherWall(UnixDaemon):
 					if (host.split()[1] == ("%s" % (self.mymac)) or host.split()[1] == ("%s" % (self.gwmac))):
 						self.logger.critical("Forbidden: '%s': The MAC address same with your MAC & Gateway" % (host))
 					else:
-						self.allow_host['%s' % (host.split()[0])] = "%s" % (host.split()[1])
 						self.logger.info("Adding static entry for the Host: %s" % (host))
 						if os.system("arp -s %s" % (host)):
-							self.logger.error("Couldn't add the static entry for the Host")
+							self.logger.critical("Couldn't add the static entry, '%s' outside of subnet" % (host.split()[0]))
 						else:
 							# append host to chain 
 							app_host_to_chain(ip=host.split()[0], mac=host.split()[1])
+							self.allow_host['%s' % (host.split()[0])] = "%s" % (host.split()[1])
 		else:
-			# WINDOW: Bad parsing
-			alert = Alert(0,"'Etherwall - Daemon Stopped'","'%s.'" % (imp_allow_host()[1]),self.logger)
-			alert.start()
-			time.sleep(5)
+			# ERROR: Bad parsing
+			Error("'Etherwall - Daemon Stopped'","'%s.'" % (imp_allow_host()[1]),self.logger)
 		
 		# sniffing mode
 		if (self.promisc == "no"):
@@ -177,14 +164,10 @@ class etherWall(UnixDaemon):
 			arpmon._startArpMon()
 		except:
 			if not check_if_up(iface=self.iface): # interface down
-				# WINDOW: interface error 
-				alert = Alert(0,"'Etherwall - Daemon Stopped'","'Interface: The interface %s went down.'" % (self.iface), self.logger)
-				alert.start()
-				time.sleep(3)
+				# ERROR: interface error 
+				Error("'Etherwall - Daemon Stopped'","'Interface: The interface %s went down.'" % (self.iface), self.logger)
 			else:
-				# WINDOW: uknown/unexpected error 
-				alert = Alert(0,"'Etherwall - Daemon Stopped'","'Unexpected Error: %s'" % (sys.exc_info()[0]),self.logger)
-				alert.start()
-				time.sleep(3)
+				# ERROR: uknown/unexpected error 
+				Error("'Etherwall - Daemon Stopped'","'Unexpected Error: %s'" % (sys.exc_info()[0]),self.logger)
 	
 ## EOF ##
