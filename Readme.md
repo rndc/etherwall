@@ -14,11 +14,15 @@ Overview
 Etherwall is a free and open source network security tool that prevent Man in The Middle (MITM) through ARP Spoofing/Poisoning attacks. It'll also prevent various attacks such as Sniffing, Hijacking, Netcut, DNS Spoofing, DHCP Spoofing, and others. Etherwall has many features, including:
 
 * Daemon Process
-* Point to Point Protection
-* Point to Multipoint Protection
+* ARP Packet Filtering
+* Point to Point & Point to Multipoint Protection
 * Realtime Protection
+* System Logging
 * Early Warning
-* Plugin / Tool
+* Support for networks Statically, Dynamically, or Both
+* Supports for Ethernet Wired & Wireless interface (IEEE 802.3 & IEEE 802.11)
+* Plugins / Tools
+* Included Man Pages
 * Easy to Use and Free
 
 
@@ -69,4 +73,4 @@ It's been tested on GNU/Linux using Slackware, Debian, Ubuntu, Backtrack, Mint, 
 Acknowledgements
 ----------------
 
-Thanks to everyone who helped me for build this program.
+Thanks to everyone who helped me to build this program.
