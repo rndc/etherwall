@@ -1,3 +1,35 @@
+ -- Agus Bimantoro <l0g.bima@gmail.com>, Mon Aug  13 00:00:00 UTC 2012
+             
+      Etherwall (1.0) Beta 3 release
+ 
+       Bug Fix:
+          
+          ~> Major
+      
+          * improved methods to obtain gateway MAC address (more secure)
+          * rewritten ARP monitoring & protection thread (fixed PtP & PtM protection)
+          * error handling optimized
+          * fixed indentation bugs
+          * fix up a few bugs
+       
+          ~> Minor 
+   
+          * fixed symlink in installation script     
+
+       Updated:
+
+          * etherwall.conf
+          * allow.conf 
+          * etherwall-oui.txt
+          * install/uninstall script
+
+       What's New:
+         
+          * added flush ARP cache.
+          * etherwall wiki was publised at http://rndc.or.id/etherwall
+          * etherwall user guide or documentation  now available, please check it at etherwall wiki page
+          * etherwall development page at https://github.com/rndc/etherwall/
+
  -- Agus Bimantoro <l0g.bima@gmail.com>, Fri Mar  2 07:51:05 UTC 2012
              
       Etherwall (1.0) Beta 2 release
@@ -7,9 +39,9 @@
           ~> Major
       
           * fixes for Error: "arptc commit() failed: Bad built-in chain name" in arptables v.0.0.8 when changing policy on chains (INPUT & OUTPUT), 
-            Thanks to Dimas Rio for reported this bugs. 
-          * prevent the gateway to change the logical address, the problem occurs because the router in the network have an interface alias. 
-          * fix up etherwall init file configuration parser. 
+            Thanks to Dimas Rio for reported this bugs.
+          * prevent the gateway to change the logical address, the problem occurs because the router in the network have an interface alias.
+          * fix up etherwall init file configuration parser.
           * fix up a few bugs. 
        
           ~> Minor 
@@ -19,13 +51,13 @@
        Updated:
 
           * arping: updates the display and added vendor of MAC, thanks to Gika Pramuditya for suggestions.
-          * dhcpcop: now used multi processing technic for sniffer and packet sender 
+          * dhcpcop: now used multi processing technic for sniffer and packet sender. 
           * help: updates the command & descriptions.    
 
        What's New:
          
           * added option for sniffing modes, option can be selected in the file "/etc/etherwall/etherwall.conf".
-          * added user's manual (available in english & indonesian language)
+          * added user's manual (available in english & indonesian language).
           * promiscop: tools to detection of promiscuous nodes in the LAN. 
           * macvendor: tools to show the vendor of a MAC Address.        
           * gwdisc: tools to searching the gateway or router host.

@@ -30,12 +30,16 @@ It Also prevent it from various attacks such as Sniffing, Hijacking, Netcut, DNS
 
 Etherwall has many features, including:
 
- - Daemon Process
- - Point to Point Protection
- - Point to Multipoint Protection
+ - Daemon Processing
+ - ARP Packet Filtering
+ - Point to Point & Point to Multipoint Protection
  - Realtime Protection
+ - System Logging
  - Early Warning
- - Plugin / Tool
+ - Support for networks Statically, Dynamically, or Both
+ - Support for Ethernet Wired & Wireless interface (IEEE 802.3 & IEEE 802.11)
+ - Plugins / Tools
+ - Included Man pages
  - Easy to Use and Free
 
 
@@ -80,7 +84,7 @@ For installation and usage you can read the 'HOWTO' file.
 ~~~~~~~~~
 
 It's been tested on GNU/Linux using Slackware, Debian, Ubuntu, Backtrack, Mint, CentOS, Fedora, OpenSUSE, etc.
-
+Overall, running on all linux distro.
 
 8. Acknowledgements
 ~~~~~~~~~~~~~~~~~~~
