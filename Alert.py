@@ -13,14 +13,16 @@ scriptdir = os.path.dirname(sys.argv[0]) or '.'
 os.chdir(scriptdir)
 
 class Alert(threading.Thread):
-	def __init__(self, title, message):
+	def __init__(self, title, message, msgbox):
 		threading.Thread.__init__(self)
 		self.status = 1 # 1 = WARNING
 		self.title = title
 		self.message = message
+		self.msgbox = msgbox
 		self.sctdir = scriptdir 
 
 	def run(self):
-		os.popen("%s/MsgBox.py %s %s %s &" % (self.sctdir, self.status, self.title, self.message))
+		if (self.msgbox == 'yes'):
+			os.popen("%s/MsgBox.py %s %s %s &" % (self.sctdir, self.status, self.title, self.message))
 
 ## EOF ##

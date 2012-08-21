@@ -67,6 +67,7 @@ class etherWall(UnixDaemon):
 				self.gwmac = get_if_conf_ff()[1]['gwhwaddr'].lower()
 				self.cidr = get_if_conf_ff()[1]['cidr']
 				self.promisc = get_if_conf_ff()[1]['promisc']
+				self.msgbox = get_if_conf_ff()[1]['msgbox']
 				if not check_if_up(iface=self.iface):
 					# ERROR: Interface is down
 					Error("'Etherwall - Daemon Stopped'","'Interface: %s is down.'" % (self.iface),self.logger)
@@ -81,6 +82,7 @@ class etherWall(UnixDaemon):
 					self.cidr = get_if_conf()[5]
 					self.gwmac = self.getGwMac() 
 					self.promisc = get_if_conf_ff()[1]['promisc']
+					self.msgbox = get_if_conf_ff()[1]['msgbox']
 				else:
 					# ERROR: No Device Up or No IPv4 address assigned
 					Error("'Etherwall - Daemon Stopped'","'Interface: No Device Up or No IPv4 address assigned.'",self.logger)
@@ -160,7 +162,7 @@ class etherWall(UnixDaemon):
 		# starting realtime protection
 		try:
 			self.logger.info("Starting Realtime Protection...")
-			arpmon = ArpMon(myip=self.myip, mymac=self.mymac, gw=self.gw, gwmac=self.gwmac, iface=self.iface, cidr=self.cidr, logger=self.logger, allow_host=self.allow_host)
+			arpmon = ArpMon(myip=self.myip, mymac=self.mymac, gw=self.gw, gwmac=self.gwmac, iface=self.iface, cidr=self.cidr, logger=self.logger, allow_host=self.allow_host, msgbox=self.msgbox)
 			arpmon._startArpMon()
 		except:
 			if not check_if_up(iface=self.iface): # interface down

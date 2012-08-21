@@ -18,7 +18,7 @@ from Error import Error
 
 class ArpMon():
 	""" ARP monitoring """ 
-	def __init__(self, myip=None, mymac=None, gw=None, gwmac=None, iface=None, cidr=None, logger=None, allow_host={}):
+	def __init__(self, myip=None, mymac=None, gw=None, gwmac=None, iface=None, cidr=None, logger=None, allow_host={}, msgbox=None):
 		self.myip = myip							# Own IP
 		self.mymac = mymac							# Own MAC
 		self.gw = gw								# Gateway IP
@@ -26,6 +26,7 @@ class ArpMon():
 		self.iface = iface							# Own interface
 		self.cidr = cidr							# Classless inter-domain routing
 		self.logger = logger						# Logger
+		self.msgbox = msgbox						# Message box
 		self.allow_host = allow_host				# Allowed host = Protected hosts
 		self.host_list = {}							# Hosts list
 		self.spoofer_list = []						# Spoofer list 
@@ -142,7 +143,7 @@ class ArpMon():
 		else:
 			self.spoofer_list.append(spoofer)
 			# WINDOW: spoofing detected !
-			alert = Alert("'Etherwall - ARP Spoofing Detected !'","'ARP from %s [%s] \npretends to be %s.'" % (spoofer.split()[0],spoofer.split()[1],target))
+			alert = Alert("'Etherwall - ARP Spoofing Detected !'","'ARP from %s [%s] \npretends to be %s.'" % (spoofer.split()[0],spoofer.split()[1],target),self.msgbox)
 			alert.start()
 
 ## EOF ##

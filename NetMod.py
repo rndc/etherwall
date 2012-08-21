@@ -116,7 +116,7 @@ def get_if_conf_ff():
 	msg_code = 0
   
 	# option and values
-	config = {'manual':'no','iface':'','ipaddr':'','hwaddr':'','netmask':'','gwaddr':'','gwhwaddr':'','promisc':'no'}
+	config = {'manual':'no','iface':'','ipaddr':'','hwaddr':'','netmask':'','gwaddr':'','gwhwaddr':'','promisc':'no','msgbox':'yes'}
   
 	ethwfile = open(ETHW_FILE,'r')
   
@@ -140,6 +140,13 @@ def get_if_conf_ff():
 						msg = ("Parsing: `%s`: must be `yes` or `no`, etherwall.conf: Line %s" % (line.strip(),n)) # message
 						break
 				if (options) == ('promisc'):
+					if (values == 'yes') or (values == 'no'):
+						values = values
+					else:
+						msg_code = 1
+						msg = ("Parsing: `%s`: must be `yes` or `no`, etherwall.conf: Line %s" % (line.strip(),n))
+						break
+				if (options) == ('msgbox'):
 					if (values == 'yes') or (values == 'no'):
 						values = values
 					else:
