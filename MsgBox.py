@@ -21,9 +21,8 @@ class MsgBox():
 		
 		# set window box
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-		self.window.set_position(gtk.WIN_POS_CENTER)
-		
-		# self.window.set_icon_from_file("etherwall.png")
+		self.window.set_position(gtk.WIN_POS_CENTER)	
+		self.window.set_icon_from_file("/opt/etherwall/etherwall.png")
 		self.window.set_size_request(540, 100)
 		self.window.set_resizable(False)
 		self.window.set_title(self.title)
