@@ -98,8 +98,8 @@ class ArpMon():
 								self.host_list[psrc] = hw
 								self.logger.info("IP Change: %s %s -> %s" % (ip,hw,phsrc))
 								break
-					if hwsrc != hw:
-						self.logger.info("New Host: %s" % phsrc)
+					if (hwsrc != hw):
+						self.logger.info("New Host: %s (%s)" % (phsrc,check_mac_vendor(mac=hwsrc)))
 						self.host_list[psrc] = hwsrc
 
 	def op_reply(self, psrc, hwsrc, pdst, hwdst):
