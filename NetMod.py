@@ -157,9 +157,10 @@ def get_if_conf_ff():
 					if values in get_if_all():
 						values = values
 					else:
-						msg_code = 2 
-						msg = ("Interface: `%s`: Device not found, etherwall.conf: Line %s" % (line.strip(),n))
-						break
+						if (config['manual'] != 'no'):
+							msg_code = 2 
+							msg = ("Interface: `%s`: Device not found, etherwall.conf: Line %s" % (line.strip(),n))
+							break
 				if (options == 'ipaddr') or (options == 'gwaddr') or (options == 'netmask'):
 					if not check_ipv4(addr=values):
 						msg_code = 1
